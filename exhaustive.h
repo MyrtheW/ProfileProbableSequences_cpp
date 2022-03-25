@@ -13,6 +13,29 @@
 //typedef std::vector<std::array<char, k>> Strings;
 // ASK: is it a good idea to return character arrays? Or should I use strings? Strings are unfortunately not mutable and not useful for all cases.
 // ASK: can I be sure I am not copying matrices and everything?
+
+// Helper functions:
+// ---------------------------------------------------------------------------------------
+// some printing functions:
+template <typename T>
+void print(T a) {
+    std::cout << a << ' ';
+}
+template <typename T, std::size_t k>
+void print(std::array <T,k>  const &a) {
+    std::cout << '[';
+    for(int i=0; i < k; i++)
+        print(a.at(i));
+    std::cout << ']';
+}
+template <typename T>
+void print(std::vector <T> const &a) {
+    std::cout << '{';
+    for(int i=0; i < a.size(); i++)
+        print(a.at(i));
+    std::cout << '}';
+}
+
 int nucl_to_rank(char nucl){
     // TODO: create alphabet dictionary outside of function, and when using SeqAn, simply use 'ordValue' method
     const int s = 4;
@@ -33,6 +56,7 @@ double profile_score(std::array<std::array<float, k>,s> profile, char *kmer){
     }
     return score;
 }
+
 template <std::size_t k, std::size_t s>
 std::array<std::array<float, k>,s> matrix_operation(std::array<std::array<float, k>,s> m,
                                                     float (*func)(float)){
@@ -46,9 +70,9 @@ std::array<std::array<float, k>,s> matrix_operation(std::array<std::array<float,
     return m;
 }
 
-
+// ---------------------------------------------------------------------------------------
 template <std::size_t k, std::size_t s>
-void enumerate_kmers(std::array<std::array<float, k>,s> profile, char alphabet[], float T,
+void enumerate_kmers(std::array<std::array<float, k>,s>& profile, char alphabet[], float T,
                         std::vector<std::array<char, k>>& strings, std::vector<float>& scores,
                         int ik=0, std::array<float, k> cashe={0}, std::array<char, k> icashe={}){
     for (int a = 0; a < s; a++) {
@@ -58,7 +82,6 @@ void enumerate_kmers(std::array<std::array<float, k>,s> profile, char alphabet[]
                 icashe[ik] = alphabet[a];
                 strings.push_back(icashe);
                 scores.push_back(score);
-                std::cout << &scores << std::endl;
             } else {
                 cashe[ik + 1] = score;
                 icashe[ik] = alphabet[a];
@@ -67,29 +90,10 @@ void enumerate_kmers(std::array<std::array<float, k>,s> profile, char alphabet[]
         }
     }
 }
-template <typename T>
-void print(T a) {
-    std::cout << a << ' ';
-}
-template <typename T, std::size_t k>
-void print(std::array <T,k>  const &a) {
-    std::cout << '[';
-    for(int i=0; i < k; i++)
-        print(a.at(i));
-    std::cout << ']';
-}
-template <typename T>
-void print(std::vector <T> const &a) {
-    std::cout << '{';
-    for(int i=0; i < a.size(); i++)
-        print(a.at(i));
-    std::cout << '}';
-}
-
 
 
 template <std::size_t k, std::size_t s>
-int exhaustive(std::array<std::array<float, k>,s>  profile, char alphabet[], float T){
+int exhaustive(std::array<std::array<float, k>,s>&  profile, char alphabet[], float T){
     int ik=0;
     std::array<float, k> cashe = {0}; // float cashe[k]={0};
     std::array<char, k> icashe = {}; // char icashe[k]={};
@@ -97,26 +101,25 @@ int exhaustive(std::array<std::array<float, k>,s>  profile, char alphabet[], flo
     std::vector<float> scores={};
     enumerate_kmers(profile, alphabet,  T, strings, scores,  ik, cashe, icashe);
     print(scores);
+    std::cout << std::endl;
     print(strings);
-    std::cout << &scores << std::endl;
     return 0;        // return 2 character arrays.
 }
 
-int test() {
+int test_exhaustive() {
     const std::size_t k = 3;
     const std::size_t s = 4;
     std::array<std::array<float, k>,s> profile = {{{0.3, 0.2, 0.5, },
                                                   {0.2, 0.25, 0.1, },
                                                   {0.4, 0.25, 0.2,  },
                                                   {0.1, 0.3, 0.2, }}};
-    //TODO: maybe create a struct of the profile that also contains the alphabet.
+    //TODO: ASK: maybe create a struct of the profile that also contains the alphabet.
     // Maybe it is easier to store the matrix transposed, because than it is easier to slice it for shorter k-mers?
 
     profile = matrix_operation(profile, &std::log2f); // takes the logarithm
     char alphabet[s] = {'A', 'C', 'G', 'T'};
     char kmer[k] = {'A', 'A', 'A'};
     double score = profile_score(profile, kmer);
-    std::cout << score;
     exhaustive(profile, alphabet, -7);
     return 0;
 }
