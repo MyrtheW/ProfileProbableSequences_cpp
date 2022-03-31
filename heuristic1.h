@@ -12,20 +12,24 @@
 template <std::size_t s, std::size_t n, std::size_t k>
 void get_best_string(std::array<std::array<float, s>, n>& profile,
                                     std::array<float, (int) n/k>& best_remaining_scores,
-                                    std::array<char, n>& best_string, float& best_score){
+                                    std::array<char, n>& best_string, float& best_score, char alphabet[]){
     std::array<float, (int) n/k>& best_kmer_scores = best_remaining_scores;
-    for (int i = 0; i < n/k; i=i++) {
+//    for (int i = 0; i < 9; i++) {
+//        std::cout << i;
+//    }
+    for (int i = 0; i < n/k; i++) {
         float score = 0;
-        for (int ik = 0; ik < k; ik=ik++) {
+        for (int ik = 0; ik < k; ik++) {
             std::array<float,s>& profile_column = profile[i*k + ik];
-            std::vector<int>::iterator max = std::max_element(profile_column.begin(), profile_column.end());
+            //typename std::array<float,s>::iterator maxx;
+            typename std::array<float,s>::iterator max = std::max_element(profile_column.begin(), profile_column.end()); //std::vector<float>::iterator
             score += *max;
-            best_string[i*k + ik] = std::distance(profile_column.begin(), max);
+            best_string[i*k + ik] = alphabet[std::distance(profile_column.begin(), max)]; //use this to index the alphabet.
         }
         best_kmer_scores[i] = score; // first they are the best_kmer_scores
     }
     best_score = std::accumulate(best_kmer_scores.begin(), best_kmer_scores.end(), 0);
-    for (int i = 0; i < n/k; i=i++) {
+    for (int i = 0; i < n/k; i++) {
         best_remaining_scores[i] = best_score - best_kmer_scores[i];
     }
 }
@@ -67,10 +71,10 @@ int heuristic1(std::array<std::array<float, s>, n>&  profile, char alphabet[], f
     std::array<char, n> best_string = {};
     std::array<float, (int) n/k> best_remaining_scores; // (int) std::ceil((float) n/k)
     float best_score;
-    get_best_string<s, n, k> (profile, best_remaining_scores, best_string, best_score);
+    get_best_string<s, n, k> (profile, best_remaining_scores, best_string, best_score, alphabet);
     std::vector<std::array<char, n>> strings = {best_string};
     std::vector<float> scores = {best_score};
-    for (int i = 0; i < n/k; i=i++) {
+    for (int i = 0; i < n/k; i++) {
         // TODO :part_of_profile = point to part of the profile
         int ik = 0;
         //if (x > T) {
@@ -94,6 +98,7 @@ int test_heuristic1() {
 
 
     heuristic1<s, n, k> (profile, alphabet, -7);
+    return 0;
 }
 
 

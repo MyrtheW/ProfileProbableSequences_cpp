@@ -1,9 +1,9 @@
 #include <iostream>
 #include "exhaustive.h"
+#include "heuristic1.h"
 //#include seqan
 
 int main() {
-    test();
-    std::cout  << nucl_to_rank('A');
+    test_heuristic1();
     return 0;
 }
