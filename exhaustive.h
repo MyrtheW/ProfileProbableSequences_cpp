@@ -10,9 +10,7 @@
 
 // ASK: how to efficiently store and use a (fixed size) matrix in c++. Vector of vector is easy, but has problems, but I cant find a better way yet
 // ASK: should I use floats or doubles?
-//typedef std::vector<std::array<char, k>> Strings;
-// ASK: is it a good idea to return character arrays? Or should I use strings? Strings are unfortunately not mutable and not useful for all cases.
-// ASK: can I be sure I am not copying matrices and everything?
+// TODO:  change the character arrays to strings. , e.g. the "icashe" (change that to "new_string") anyway...
 
 // Helper functions:
 // ---------------------------------------------------------------------------------------
@@ -35,21 +33,24 @@ void print(std::vector <T> const &a) {
         print(a.at(i));
     std::cout << '}';
 }
-
-int nucl_to_rank(char nucl){
-    // TODO: create alphabet dictionary outside of function, and when using SeqAn, simply use 'ordValue' method
-    const int s = 4;
-    char alphabet[s] = {'A', 'C', 'G', 'T'}; //= {'A': 0, 'C': 1, 'G': 2, 'T': 3};
+template <std::size_t s>
+std::map <char, int> create_alphabet_dict(std::string& alphabet){
+    //char alphabet[s] = {'A', 'C', 'G', 'T'}; //= {'A': 0, 'C': 1, 'G': 2, 'T': 3};
     std::map <char, int>  alphabet_dict;
     for (int i = 0; i < s; i++) {
-        alphabet_dict[alphabet[i]] = i;
+    alphabet_dict[alphabet[i]] = i;
     }
+    return alphabet_dict;
+        }
+std::map <char, int> alphabet_dict;
+
+int nucl_to_rank(char& nucl){
     return alphabet_dict[nucl];
 }
 
 template <std::size_t k, std::size_t s>
 double profile_score(std::array<std::array<float, k>,s> profile, char *kmer){
-    // TODO: assert whether length of the kmer == length profile
+    // assert whether length of the kmer == length profile
     double score = 0;
     for (int i = 0; i < k; i++) {
         score += profile[nucl_to_rank(kmer[i])][i];
@@ -58,7 +59,7 @@ double profile_score(std::array<std::array<float, k>,s> profile, char *kmer){
 }
 
 template <std::size_t k, std::size_t s>
-std::array<std::array<float, k>,s> matrix_operation(std::array<std::array<float, k>,s> m,
+std::array<std::array<float, k>,s> matrix_operation(std::array<std::array<float, k>,s>& m,
                                                     float (*func)(float)){
     for(int i=0; i<s; i++) {
         for(int j=0; j<k; j++){
@@ -72,7 +73,7 @@ std::array<std::array<float, k>,s> matrix_operation(std::array<std::array<float,
 
 // ---------------------------------------------------------------------------------------
 template <std::size_t k, std::size_t s>
-void enumerate_kmers(std::array<std::array<float, k>,s>& profile, char alphabet[], float T,
+void enumerate_kmers(std::array<std::array<float, k>,s>& profile, std::string alphabet, float T,
                         std::vector<std::array<char, k>>& strings, std::vector<float>& scores,
                         int ik=0, std::array<float, k> cashe={0}, std::array<char, k> icashe={}){
     for (int a = 0; a < s; a++) {
@@ -89,11 +90,11 @@ void enumerate_kmers(std::array<std::array<float, k>,s>& profile, char alphabet[
             }
         }
     }
-}
+} // the function does not output anything, because it changes the input-datastructures.
 
 
 template <std::size_t k, std::size_t s>
-int exhaustive(std::array<std::array<float, k>,s>&  profile, char alphabet[], float T){
+int exhaustive(std::array<std::array<float, k>,s>&  profile, std::string alphabet, float T){
     int ik=0;
     std::array<float, k> cashe = {0}; // float cashe[k]={0};
     std::array<char, k> icashe = {}; // char icashe[k]={};
@@ -117,7 +118,8 @@ int test_exhaustive() {
     // Maybe it is easier to store the matrix transposed, because than it is easier to slice it for shorter k-mers?
 
     profile = matrix_operation(profile, &std::log2f); // takes the logarithm
-    char alphabet[s] = {'A', 'C', 'G', 'T'};
+    std::string alphabet = {'A', 'C', 'G', 'T'};
+    alphabet_dict = create_alphabet_dict<s> (alphabet);
     char kmer[k] = {'A', 'A', 'A'};
     double score = profile_score(profile, kmer);
     exhaustive(profile, alphabet, -7);

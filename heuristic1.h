@@ -13,7 +13,7 @@ template <std::size_t s, std::size_t n, std::size_t k>
 void get_best_string(std::array<std::array<float, s>, n>& profile,
                                     std::array<float, (int) n/k +1>& best_remaining_scores,
                                     std::string& best_string, float& best_score,
-                                    std::array<char, s>& alphabet){
+                                    std::string& alphabet){
     std::array<float, (int) n/k +1>& best_kmer_scores = best_remaining_scores;
     for (int i = 0; i < std::ceil( (float) n/k); i++) {
         float score = 0;
@@ -38,13 +38,13 @@ return true;
 }
 
 template <std::size_t k, std::size_t s, std::size_t n>
-void enumerate_kmers(std::array<std::array<float, s>, n>& profile, std::array<char, s>& alphabet, float T,
+void enumerate_kmers(std::array<std::array<float, s>, n>& profile, std::string& alphabet, float T,
                      std::vector<std::string>& strings, std::vector<float>& scores, std::string& new_string,
                      int ik=0, std::array<float, k> cashe={0},
                      int i=0, std::string best_string={}) { // ALTERNATIVE extra parameter, bool new_equals_best = 1
     // std::string& best_string = strings[0];
     for (int a = 0; a < s; a++) {
-        float score = cashe[ik] + profile[a][i+ik];
+        float score = cashe[ik] + profile[i+ik][a];
         if (score > T) { // By placing the threshold here, it can already prune a set of k-mers, if the first nucleotides in the k-mer would already cause the score to not reach the threshold
             if (ik == k - 1 or i*k + ik == n-1) { // or if i*k + ik < n, for the last k-mer.
                 new_string[i*k + ik] = alphabet[a];
@@ -67,8 +67,8 @@ void enumerate_kmers(std::array<std::array<float, s>, n>& profile, std::array<ch
 }
 
 template <std::size_t s, std::size_t n, std::size_t k>
-int heuristic1(std::array<std::array<float, s>, n>&  profile, std::array<char, s>& alphabet, float T){
-    std::string best_string = {};
+int heuristic1(std::array<std::array<float, s>, n>&  profile, std::string& alphabet, float T){
+    std::string best_string(n, ' ');
     std::array<float, (int) n/k + 1> best_remaining_scores; // (int) std::ceil((float) n/k)
     float best_score;
     get_best_string<s, n, k> (profile, best_remaining_scores, best_string, best_score, alphabet);
@@ -86,14 +86,14 @@ int heuristic1(std::array<std::array<float, s>, n>&  profile, std::array<char, s
 
 int test_heuristic1() {
     const std::size_t n = 3;
-    const std::size_t k = 2;
+    const std::size_t k = 1;
     const std::size_t s = 4;
 
     std::array<std::array<float, s>, n> profile = {{{0.3, 0.2, 0.4, 0.1,},
                                                     {0.2, 0.25, 0.25, 0.3,},
                                                     {0.5, 0.1, 0.2, 0.2,}}};
     profile = matrix_operation(profile, &std::log2f); // takes the logarithm
-    std::array<char, s> alphabet = {'A', 'C', 'G', 'T'};
+    std::string alphabet = {'A', 'C', 'G', 'T'};
 
 
     heuristic1<s, n, k> (profile, alphabet, -7);
