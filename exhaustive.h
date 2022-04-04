@@ -53,7 +53,7 @@ double profile_score(std::array<std::array<float, k>,s> profile, char *kmer){
     // assert whether length of the kmer == length profile
     double score = 0;
     for (int i = 0; i < k; i++) {
-        score += profile[nucl_to_rank(kmer[i])][i];
+        score += profile[i][nucl_to_rank(kmer[i])];
     }
     return score;
 }
@@ -73,7 +73,7 @@ std::array<std::array<float, k>,s> matrix_operation(std::array<std::array<float,
 
 // ---------------------------------------------------------------------------------------
 template <std::size_t k, std::size_t s>
-void enumerate_kmers(std::array<std::array<float, k>,s>& profile, std::string alphabet, float T,
+void enumerate_kmers(std::array<std::array<float, s>, k> & profile, std::string alphabet, float T,
                         std::vector<std::array<char, k>>& strings, std::vector<float>& scores,
                         int ik=0, std::array<float, k> cashe={0}, std::array<char, k> icashe={}){
     for (int a = 0; a < s; a++) {
@@ -93,35 +93,31 @@ void enumerate_kmers(std::array<std::array<float, k>,s>& profile, std::string al
 } // the function does not output anything, because it changes the input-datastructures.
 
 
-template <std::size_t k, std::size_t s>
-int exhaustive(std::array<std::array<float, k>,s>&  profile, std::string alphabet, float T){
+template <std::size_t n, std::size_t s>
+auto exhaustive(std::array<std::array<float, s>, n> &  profile, std::string alphabet, float T){
     int ik=0;
-    std::array<float, k> cashe = {0}; // float cashe[k]={0};
-    std::array<char, k> icashe = {}; // char icashe[k]={};
-    std::vector<std::array<char, k>> strings; //[]={}
+    std::array<float, n> cashe = {0}; // float cashe[k]={0};
+    std::array<char, n> icashe = {}; // char icashe[k]={};
+    std::vector<std::array<char, n>> strings; //[]={}
     std::vector<float> scores={};
     enumerate_kmers(profile, alphabet,  T, strings, scores,  ik, cashe, icashe);
     print(scores);
     std::cout << std::endl;
     print(strings);
-    return 0;        // return 2 character arrays.
+    return std::make_tuple(&strings, &scores);        // return 2 character arrays.
 }
 
 int test_exhaustive() {
-    const std::size_t k = 3;
+    const std::size_t n = 3;
     const std::size_t s = 4;
-    std::array<std::array<float, k>,s> profile = {{{0.3, 0.2, 0.5, },
-                                                  {0.2, 0.25, 0.1, },
-                                                  {0.4, 0.25, 0.2,  },
-                                                  {0.1, 0.3, 0.2, }}};
-    //TODO: ASK: maybe create a struct of the profile that also contains the alphabet.
-    // Maybe it is easier to store the matrix transposed, because than it is easier to slice it for shorter k-mers?
+    std::array<std::array<float, s>, n> profile = {{{0.3, 0.2, 0.4, 0.1,},
+                                                    {0.2, 0.25, 0.25, 0.3,},
+                                                    {0.5, 0.1, 0.2, 0.2,}}};
 
     profile = matrix_operation(profile, &std::log2f); // takes the logarithm
     std::string alphabet = {'A', 'C', 'G', 'T'};
     alphabet_dict = create_alphabet_dict<s> (alphabet);
-    char kmer[k] = {'A', 'A', 'A'};
-    double score = profile_score(profile, kmer);
+
     exhaustive(profile, alphabet, -7);
     return 0;
 }

@@ -45,7 +45,7 @@ void enumerate_tuples(std::array<std::array<float, s>, n>& profile,
 
 
 template <std::size_t s, std::size_t n, std::size_t k>
-int heuristic2(std::array<std::array<float, s>, n>&  profile, std::string& alphabet, float T, int b){
+auto heuristic2(std::array<std::array<float, s>, n>&  profile, std::string& alphabet, float T, int b){
     std::string best_string(n, ' ');
     std::array<float, (int) n/k + 1> best_remaining_scores; // (int) std::ceil((float) n/k)
     float best_score;
@@ -92,7 +92,8 @@ int heuristic2(std::array<std::array<float, s>, n>&  profile, std::string& alpha
 
         }
     }
-    return 0;        // return 2 character arrays.
+    std::cout << &strings << "\n";
+    return(&strings);        // return 2 character arrays.
 }
 
 int test_heuristic2() {
@@ -108,7 +109,8 @@ int test_heuristic2() {
     std::string alphabet = {'A', 'C', 'G', 'T'};
     alphabet_dict = create_alphabet_dict<s> (alphabet);
 
-    heuristic2<s, n, k> (profile, alphabet, -7, b);
+    auto strings = heuristic2<s, n, k> (profile, alphabet, -7, b);
+    std::cout << &strings << "\n";
     return 0;
 }
 

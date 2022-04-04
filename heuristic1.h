@@ -67,7 +67,7 @@ void enumerate_kmers(std::array<std::array<float, s>, n>& profile, std::string& 
 }
 
 template <std::size_t s, std::size_t n, std::size_t k>
-int heuristic1(std::array<std::array<float, s>, n>&  profile, std::string& alphabet, float T){
+auto heuristic1(std::array<std::array<float, s>, n>&  profile, std::string& alphabet, float T){
     std::string best_string(n, ' ');
     std::array<float, (int) n/k + 1> best_remaining_scores; // (int) std::ceil((float) n/k)
     float best_score;
@@ -81,7 +81,7 @@ int heuristic1(std::array<std::array<float, s>, n>&  profile, std::string& alpha
         std::string new_string = best_string; // should generate a copy...
         enumerate_kmers(profile, alphabet, T, strings, scores, new_string, ik, cashe,  i, best_string);
     }
-    return 0;        // return 2 character arrays.
+    return std::make_tuple(&strings, &scores);        // return 2 character arrays.
 }
 
 int test_heuristic1() {
