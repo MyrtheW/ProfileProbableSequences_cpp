@@ -4,63 +4,31 @@
 #include <map>
 #include <string>
 #include <cmath>
-// https://sgssgene-implementingsea-xsaozq1kabb.ws-eu38.gitpod.io/
-// also look at code of Jörg: https://github.com/seqan/mars/blob/9db7deee6e23be3e2af8508cb5cb1b351c028556/src/profile_char.hpp
 
-
-// ASK: how to efficiently store and use a (fixed size) matrix in c++. Vector of vector is easy, but has problems, but I cant find a better way yet
-// ASK: should I use floats or doubles?
-// TODO:  change the character arrays to strings. , e.g. the "icashe" (change that to "new_string") anyway...
-
-// Helper functions:
+// HELPER FUNCTIONS
 // ---------------------------------------------------------------------------------------
-// some printing functions:
-template <typename T>
-void print(T a) {
-    std::cout << a << ' ';
-}
-template <typename T, std::size_t k>
-void print(std::array <T,k>  const &a) {
-    std::cout << '[';
-    for(int i=0; i < k; i++)
-        print(a.at(i));
-    std::cout << ']';
-}
-template <typename T>
-void print(std::vector <T> const &a) {
-    std::cout << '{';
-    for(int i=0; i < a.size(); i++)
-        print(a.at(i));
-    std::cout << '}';
-}
 template <std::size_t s>
 std::map <char, int> create_alphabet_dict(std::string& alphabet){
-    //char alphabet[s] = {'A', 'C', 'G', 'T'}; //= {'A': 0, 'C': 1, 'G': 2, 'T': 3};
+    // This is a temporary function required for the funciton below
+    // that turns an alphabet {'A', 'C', 'G', 'T'}; into a dictionary {'A': 0, 'C': 1, 'G': 2, 'T': 3};
     std::map <char, int>  alphabet_dict;
     for (int i = 0; i < s; i++) {
     alphabet_dict[alphabet[i]] = i;
     }
     return alphabet_dict;
-        }
-std::map <char, int> alphabet_dict;
-
-int nucl_to_rank(char& nucl){
-    return alphabet_dict[nucl];
 }
 
-template <std::size_t k, std::size_t s>
-double profile_score(std::array<std::array<float, k>,s> profile, char *kmer){
-    // assert whether length of the kmer == length profile
-    double score = 0;
-    for (int i = 0; i < k; i++) {
-        score += profile[i][nucl_to_rank(kmer[i])];
-    }
-    return score;
+std::map <char, int> alphabet_dict;
+int nucl_to_rank(char& nucl){
+    // This is a temporary function to obtain the rank of a letter in the alphabet.
+    // This should later be replaced when using SeqAn alphabet.
+    return alphabet_dict[nucl];
 }
 
 template <std::size_t k, std::size_t s>
 std::array<std::array<float, k>,s> matrix_operation(std::array<std::array<float, k>,s>& m,
                                                     float (*func)(float)){
+    // A small helper function that can be used to do operations, such as taking logarithms, on matrices of s x k in size.
     for(int i=0; i<s; i++) {
         for(int j=0; j<k; j++){
             m[i][j] = func(m[i][j]);
@@ -70,54 +38,50 @@ std::array<std::array<float, k>,s> matrix_operation(std::array<std::array<float,
 }
 
 // ---------------------------------------------------------------------------------------
-template <std::size_t k, std::size_t s>
-void enumerate_kmers(std::array<std::array<float, s>, k> & profile, std::string alphabet, float T,
-                        std::vector<std::array<char, k>>& strings, std::vector<float>& scores,
-                        int ik=0, std::array<float, k> cashe={0}, std::array<char, k> icashe={}){
+template <std::size_t n, std::size_t s>
+void enumerate_strings(std::array<std::array<float, s>, n> & profile, std::string alphabet, float T,
+                        std::vector<std::string>& strings, std::vector<float>& scores,
+                        int ik=0, std::array<float, n> score_cashe = {0}, std::string string = std::string(n, ' ')){
+    // This enumerates the strings on demand. It starts at the first position and iterates recursively, depth-first through
+    // all the letters in the alphabet. E.g. for n=3, it first creates AAA. If this string reaches the threshold,
+    // it will be added to the strings vector.
     for (int a = 0; a < s; a++) {
-        float score = cashe[ik] + profile[ik][a];
-        //if (score > T) { // ATTENTION: you can only make this threshold if all values are below 0.
-            if (ik == k - 1) {
+        float score = score_cashe[ik] + profile[ik][a];
+        // It is  possible to already threshold a partially created string of length < n, in case profile matrices are used
+        // in which all values are =< 0. It does not work with logodd matrices which also contain values > 0, because then
+        // a string's score may still increase when growing it in length. However, I observed that early thresholding can be
+        // very beneficial, particularly when there are many nucleotides with a very low probability in the matrix.
+        // In order to place the threshold here, logodd matrices can be converted by substracting the highest value
+        // in the matrix (h) from all the values in the matrix, and n*h from the threshold T.
+        //if (score > T) {
+            if (ik == n - 1) {
                 if (score > T) {
-                    icashe[ik] = alphabet[a];
-                    strings.push_back(icashe);
+                    string[ik] = alphabet[a];
+                    strings.push_back(string);
                     scores.push_back(score);
                 }
             } else {
-                cashe[ik + 1] = score;
-                icashe[ik] = alphabet[a];
-                enumerate_kmers(profile, alphabet, T, strings, scores, (ik + 1), cashe, icashe);
+                score_cashe[ik + 1] = score;
+                string[ik] = alphabet[a];
+                enumerate_strings(profile, alphabet, T, strings, scores, (ik + 1), score_cashe, string);
             }
         //}
     }
-} // the function does not output anything, because it changes the input-datastructures.
+} // ASK: this function does not output anything, because it changes the input-datastructures. Is that a good practice?
 
 
 template <std::size_t n, std::size_t s>
 auto exhaustive(std::array<std::array<float, s>, n> &  profile, std::string alphabet, float T){
+    // This function does the exhaustive search, and is mainly a wrapper for the recursive function that enumerates
+    // the strings.
     int ik=0;
-    std::array<float, n> cashe = {0}; // float cashe[k]={0};
-    std::array<char, n> icashe = {}; // char icashe[k]={};
-    std::vector<std::array<char, n>> strings; //[]={}
+    std::vector<std::string> strings;
     std::vector<float> scores={};
-    enumerate_kmers(profile, alphabet,  T, strings, scores,  ik, cashe, icashe);
-    return std::make_tuple(strings, scores);        //ASK: tried to return &strings, but it doesn't work. return 2 character arrays.
+    enumerate_strings(profile, alphabet,  T, strings, scores,  ik);
+    return std::make_tuple(strings, scores);        //ASK: I tried to return &strings, but that doesn't work. Now it is not so efficient, because a copy is made.
 }
 
-int test_exhaustive() {
-    const std::size_t n = 3;
-    const std::size_t s = 4;
-    std::array<std::array<float, s>, n> profile = {{{0.3, 0.2, 0.4, 0.1,},
-                                                    {0.2, 0.25, 0.25, 0.3,},
-                                                    {0.5, 0.1, 0.2, 0.2,}}};
 
-    profile = matrix_operation(profile, &std::log2f); // takes the logarithm
-    std::string alphabet = {'A', 'C', 'G', 'T'};
-    alphabet_dict = create_alphabet_dict<s> (alphabet);
-
-    exhaustive(profile, alphabet, -7);
-    return 0;
-}
 
 
 

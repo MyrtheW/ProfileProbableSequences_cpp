@@ -35,14 +35,6 @@ void read_matrix (std::string filename, std::array<std::array<float, s>, n>&  pr
     }
 }
 
-void test_read_matrix(){
-    const std::size_t n =  8;
-    const std::size_t s = 4;
-    std::array<std::array<float, s>, n> profile;
-    std::string alphabet;
-    read_matrix("C:\\Users\\myrth\\CLionProjects\\internship_profile\\matrix.txt", profile, alphabet);
-    print(profile);
-}
 
 template <typename T>
 std::string outstring(std::vector<T> out_array){
@@ -52,30 +44,26 @@ std::string outstring(std::vector<T> out_array){
 }
 
 int evaluation() {
-//    const std::size_t n =  3;
-//    const std::size_t s = 4;
-//    std::string alphabet = {'A', 'C', 'G', 'T'};
-//    std::array<std::array<float, s>, n> profile = {{{0.3, 0.2, 0.4, 0.1,},
-//                                                    {0.2, 0.25, 0.25, 0.3,},
-//                                                    {0.5, 0.1, 0.2, 0.2,}}};
-    std::string folder = "C:\\Users\\myrth\\Documents\\SCHOOL\\1E SEMESTER MASTER\\S; stage\\Python code\\data\\DNA_profiles\\";
+// SET PARAMETERS
     std::string file_name = "MA0007.1.jaspar.txt";
-    std::cout << folder + file_name <<std::endl;
+    const std::vector<int> ks = {1, 2,3,4,};
+    const std::vector<int> bs = {1, 2,3,4,};
+    float T = 9; // Threshold
     const std::size_t n =  12;
+
+// READ FILE
+// Read in the profile matrix and the alphabet
+    std::string folder = "C:\\Users\\myrth\\Documents\\SCHOOL\\1E SEMESTER MASTER\\S; stage\\Python code\\data\\DNA_profiles\\";
+    std::cout << folder + file_name <<std::endl;
     const std::size_t s = 4;
     std::array<std::array<float, s>, n> profile;
     std::string alphabet;
     read_matrix(folder + file_name, profile, alphabet);
     alphabet_dict = create_alphabet_dict<s> (alphabet);
-
-    const std::vector<int> ks = {1, 2,3,4,};
-
-    const std::vector<int> bs = {1, 2,3,4,};
-    float T = 8;
     struct timespec start, end;
 
-//------------------------
 // EXHAUSTIVE
+// Generate the exhaustive search results.
     clock_gettime(CLOCK_MONOTONIC, &start);
     auto result_exhaustive = exhaustive(profile, alphabet, T);
     clock_gettime(CLOCK_MONOTONIC, &end);
@@ -83,7 +71,7 @@ int evaluation() {
     double time_exhaustive = ((end.tv_sec - start.tv_sec) * 1e9 + (end.tv_nsec - start.tv_nsec)) * 1e-9;
     std::sort(std::get<1>(result_exhaustive).begin(), std::get<1>(result_exhaustive).end());
     std::reverse(std::get<1>(result_exhaustive).begin(), std::get<1>(result_exhaustive).end());
-//-------------------------
+
 // HEURISTIC 1
     std::vector<float> found_fractions_h1 = {};
     std::vector<float> speedups_h1 ={};
@@ -95,6 +83,7 @@ int evaluation() {
         if (time_result != 0) speedups_h1.push_back(time_exhaustive/time_result);
         found_fractions_h1.push_back((std::get<0>(result)).size()/size_exhaustive);
     }
+
 // HEURISTIC 2
     std::vector<float> found_fractions_h2 = {};
     std::vector<float> speedups_h2 ={};
@@ -119,9 +108,10 @@ int evaluation() {
 //        found_fractions_h3.push_back((result).size()/size_exhaustive);
 //    }
 
-    // save results
-
+// SAVE RESULTS
+    // Saving results to a python library, that can be read in to make figures.
     std::ofstream o(folder+"results\\"+file_name.substr(0,6) + ".py"); // "here.py");//
+    o << "size_exhaustive = " << size_exhaustive <<std::endl;
     o << "ks = [" << outstring(ks) << "]" <<std::endl;
     o << "found_fractions_h1 = [" << outstring(found_fractions_h1) << "]" <<std::endl;
     o << "speedups_h1 = [" << outstring(speedups_h1) << "]" <<std::endl;
@@ -130,8 +120,8 @@ int evaluation() {
     o << "speedups_h2 = [" << outstring(speedups_h2) << "]" <<std::endl;
     o.close();
     return 0;
-
     }
+
 
 
 #endif //UNTITLED_EVALUATION_H

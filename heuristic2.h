@@ -46,29 +46,28 @@ void enumerate_tuples(std::array<std::array<float, s>, n>& profile,
 
 template <std::size_t s, std::size_t n>
 auto heuristic2(std::array<std::array<float, s>, n>&  profile, std::string& alphabet, float T, int b){
+    // Initialize datastructures and add the best string to them.
     std::string best_string(n, ' ');
-    std::vector<float> best_remaining_scores(n); // (int) std::ceil((float) n/k)
+    std::vector<float> best_remaining_scores(n);
     float best_score;
     std::vector<std::tuple<char, int, float>> tuples;
     get_best_string(profile, best_remaining_scores, best_string, best_score, alphabet);
     enumerate_tuples(profile, alphabet, T, tuples, best_string, best_remaining_scores);
 
-    // Hash table
-    std::unordered_map<std::string, float> strings;
+    std::unordered_map<std::string, float> strings; // Hash table
     strings[best_string] = best_score;
-    // Min heap
-    std::vector<std::tuple<std::string, float>> b_best_strings;
+
+    std::vector<std::tuple<std::string, float>> b_best_strings; // Min heap containing the b best strings
     b_best_strings.push_back(std::make_tuple(best_string, best_score));
 
-    // For loop using auto
-    for (auto tup = tuples.begin(); tup != tuples.end(); tup++)
-        // ASK: loop over a copy of the b_best, because of changes that are made during looping...
+    // Loop over the tuples of nucleotides, and add purmutate the b best strings at these positions.
+    for (auto tup = tuples.begin(); tup != tuples.end(); tup++) // Each tuple consists of (nucleotide, i, score)
+        // ASK: I loop over a copy of the b_best, because of changes that are made during looping...
     {
         auto copy_b_best_strings = b_best_strings;
         for (auto existing_string_score = copy_b_best_strings.begin();
              existing_string_score != copy_b_best_strings.end(); existing_string_score++) {
-            //(nucleotide, i, score) = *tup
-            std::string new_string = std::get<0>(*existing_string_score); // should create a copy
+            std::string new_string = std::get<0>(*existing_string_score);
             new_string[std::get<1>(*tup)] = std::get<0>(*tup);
             if (not strings[new_string]) {
                 float new_score = std::get<1>(*existing_string_score)
@@ -77,10 +76,11 @@ auto heuristic2(std::array<std::array<float, s>, n>&  profile, std::string& alph
                 if (new_score > T) {
                     strings[new_string] = new_score;
                     if (b_best_strings.size() < b) {
+                        //If the b best strings is not completely filled yet, then the new string needs to be added:
                         b_best_strings.push_back(std::make_tuple(new_string, new_score));
                         std::push_heap(b_best_strings.begin(), b_best_strings.end(), b_best_comparator());
                     } else if (new_score > std::get<1>(b_best_strings[0])) {
-
+                        //If the new string has a high enough score, it needs to be placed in the b best strings:
                         std::pop_heap(b_best_strings.begin(), b_best_strings.end(), b_best_comparator());
                         b_best_strings.pop_back();
 
@@ -94,21 +94,6 @@ auto heuristic2(std::array<std::array<float, s>, n>&  profile, std::string& alph
     return(strings);
 }
 
-int test_heuristic2() {
-    const std::size_t n = 3;
-    const std::size_t k = 1;
-    const std::size_t s = 4;
-    int b = 5;
 
-    std::array<std::array<float, s>, n> profile = {{{0.3, 0.2, 0.4, 0.1,},
-                                                    {0.2, 0.25, 0.25, 0.3,},
-                                                    {0.5, 0.1, 0.2, 0.2,}}};
-    profile = matrix_operation(profile, &std::log2f); // takes the logarithm
-    std::string alphabet = {'A', 'C', 'G', 'T'};
-    alphabet_dict = create_alphabet_dict<s> (alphabet);
-
-    auto strings = heuristic2<s, n> (profile, alphabet, -7, b);
-    return 0;
-}
 
 #endif //UNTITLED_HEURISTIC2_H

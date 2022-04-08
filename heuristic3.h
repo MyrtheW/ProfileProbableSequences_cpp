@@ -9,34 +9,8 @@
 #include <numeric>
 #include <unordered_map>
 
-//template <std::size_t s, std::size_t n>
-//void get_best_string_concat(std::array<std::array<float, s>, n>& profile,
-//                     std::vector<float>& best_remaining_scores,
-//                     std::string& best_string, float& best_score,
-//                     std::string& alphabet, int k=(int) n,
-//                     bool slide = 1){
-//    std::vector<float>& best_kmer_scores = best_remaining_scores;
-//    for (int i = 0; i < std::ceil( (float) n/k*(slide*(k - 2)+1)); i++) { // CHANGED If slide is true, then i<n-k. Else i<ceil(n/k)
-//        float score = 0;
-//        for (int ik = 0; ik < k and i*k/(slide*(k - 1)+1) + ik <n; ik++) { // CHANGED
-//            std::array<float,s>& profile_column = profile[i*k/ (slide * (k - 1) + 1)  + ik];
-//            typename std::array<float,s>::iterator max = std::max_element(profile_column.begin(), profile_column.end()); //std::vector<float>::iterator
-//            score += *max;
-//            if (i*k/(slide*(k - 1)+1) % k == 0){ // CHANGED
-//                best_string[i * k / (slide * (k - 1) + 1) + ik] = alphabet[std::distance(profile_column.begin(),
-//                                                                                         max)]; // CHANGED
-//            }
-//        }
-//        best_kmer_scores[i] = score; // first they are the best_kmer_scores
-//    }
-//    best_score = std::accumulate(best_kmer_scores.begin(), best_kmer_scores.end(), 0.0);
-//    for (int i = 0; i < std::ceil( (float) n/k*(slide*(k - 2)+1)); i++) { // CHANGED
-//        best_remaining_scores[i] = best_score - best_kmer_scores[i];
-//    }
-//}
-
 template <std::size_t s, std::size_t n>
-void get_best_string2(std::array<std::array<float, s>, n>& profile,
+void get_best_string_heur3(std::array<std::array<float, s>, n>& profile,
                       std::vector<float>& best_remaining_scores,
                       std::string& best_string, float& best_score,
                       std::string& alphabet, int k=(int) n,
@@ -94,7 +68,7 @@ auto heuristic3(std::array<std::array<float, s>, n>&  profile, std::string& alph
     std::string best_string(n, ' ');
     std::vector<float> best_remaining_scores((int) n ); // CHANGED
     float best_score;
-    get_best_string2<s, n> (profile, best_remaining_scores, best_string, best_score, alphabet, k, 1);
+    get_best_string_heur3<s, n> (profile, best_remaining_scores, best_string, best_score, alphabet, k, 1);
     std::unordered_map<std::string, float> strings;
     strings[best_string] = best_score;
     for (int i = 0; i < n-k; i++) { // CHANGED // Signal: SIGTRAP (Trace/breakpoint trap)
