@@ -64,9 +64,7 @@ std::array<std::array<float, k>,s> matrix_operation(std::array<std::array<float,
     for(int i=0; i<s; i++) {
         for(int j=0; j<k; j++){
             m[i][j] = func(m[i][j]);
-            std::cout << m[i][j] << " ";
         }
-        std::cout << std::endl;
     }
     return m;
 }
@@ -78,17 +76,19 @@ void enumerate_kmers(std::array<std::array<float, s>, k> & profile, std::string 
                         int ik=0, std::array<float, k> cashe={0}, std::array<char, k> icashe={}){
     for (int a = 0; a < s; a++) {
         float score = cashe[ik] + profile[ik][a];
-        if (score > T) {
+        //if (score > T) { // ATTENTION: you can only make this threshold if all values are below 0.
             if (ik == k - 1) {
-                icashe[ik] = alphabet[a];
-                strings.push_back(icashe);
-                scores.push_back(score);
+                if (score > T) {
+                    icashe[ik] = alphabet[a];
+                    strings.push_back(icashe);
+                    scores.push_back(score);
+                }
             } else {
                 cashe[ik + 1] = score;
                 icashe[ik] = alphabet[a];
                 enumerate_kmers(profile, alphabet, T, strings, scores, (ik + 1), cashe, icashe);
             }
-        }
+        //}
     }
 } // the function does not output anything, because it changes the input-datastructures.
 
@@ -101,10 +101,7 @@ auto exhaustive(std::array<std::array<float, s>, n> &  profile, std::string alph
     std::vector<std::array<char, n>> strings; //[]={}
     std::vector<float> scores={};
     enumerate_kmers(profile, alphabet,  T, strings, scores,  ik, cashe, icashe);
-    print(scores);
-    std::cout << std::endl;
-    print(strings);
-    return std::make_tuple(&strings, &scores);        // return 2 character arrays.
+    return std::make_tuple(strings, scores);        //ASK: tried to return &strings, but it doesn't work. return 2 character arrays.
 }
 
 int test_exhaustive() {

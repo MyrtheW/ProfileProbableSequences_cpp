@@ -1,7 +1,3 @@
-//
-// Created by myrth on 01/04/2022.
-//
-
 #ifndef UNTITLED_EVALUATION_H
 #define UNTITLED_EVALUATION_H
 #include <chrono>
@@ -13,54 +9,129 @@
 #include <numeric>
 #include <unordered_map>
 #include <queue>
+#include <fstream>
 #include "exhaustive.h"
 #include "heuristic1.h"
 #include "heuristic2.h"
 
-auto found_fraction = [] (auto& size_exhaustive, auto& size_result){return size_result/size_exhaustive;};
+template <std::size_t s, std::size_t n>
+void read_matrix (std::string filename, std::array<std::array<float, s>, n>&  profile, std::string&  alphabet){
+    std::ifstream f(filename, std::ios::in);
+    if ( f.is_open() ) { // always check whether the file is open
+        int n_file; int s_file;
+        f >> n_file  >>  s_file;
+        if ((n_file < n) || (s_file != s)) std::cout << "Matrix dimensions!";
+        f >> alphabet;
+        for (int i = 0; i < n; i++){
+            for (int j = 0; j<s; j++){
+                std::string x;
+                f >> x;
+                float x_new;
+                if (x == "-inf"){ x_new = -std::numeric_limits<float>::infinity();}
+                else{ x_new = std::stof(x);}
+                profile[i][j] = x_new;
+            }
+    }
+    }
+}
 
-auto speedup = [] (auto& time_exhaustive, auto& time_result)
-{
-    return time_result/time_exhaustive;
-};
+void test_read_matrix(){
+    const std::size_t n =  8;
+    const std::size_t s = 4;
+    std::array<std::array<float, s>, n> profile;
+    std::string alphabet;
+    read_matrix("C:\\Users\\myrth\\CLionProjects\\internship_profile\\matrix.txt", profile, alphabet);
+    print(profile);
+}
+
+template <typename T>
+std::string outstring(std::vector<T> out_array){
+    std::string out = "";
+    for (auto &item: out_array) { std::string x = std::to_string(item); out = out + x + ", "; }
+    return out;
+}
 
 int evaluation() {
-    const std::size_t n =  3;
+//    const std::size_t n =  3;
+//    const std::size_t s = 4;
+//    std::string alphabet = {'A', 'C', 'G', 'T'};
+//    std::array<std::array<float, s>, n> profile = {{{0.3, 0.2, 0.4, 0.1,},
+//                                                    {0.2, 0.25, 0.25, 0.3,},
+//                                                    {0.5, 0.1, 0.2, 0.2,}}};
+    std::string folder = "C:\\Users\\myrth\\Documents\\SCHOOL\\1E SEMESTER MASTER\\S; stage\\Python code\\data\\DNA_profiles\\";
+    std::string file_name = "MA0007.1.jaspar.txt";
+    std::cout << folder + file_name <<std::endl;
+    const std::size_t n =  12;
     const std::size_t s = 4;
-    std::string alphabet = {'A', 'C', 'G', 'T'};
+    std::array<std::array<float, s>, n> profile;
+    std::string alphabet;
+    read_matrix(folder + file_name, profile, alphabet);
     alphabet_dict = create_alphabet_dict<s> (alphabet);
-    std::array<std::array<float, s>, n> profile = {{{0.3, 0.2, 0.4, 0.1,},
-                                                    {0.2, 0.25, 0.25, 0.3,},
-                                                    {0.5, 0.1, 0.2, 0.2,}}};
-    const std::vector<std::size_t > ks = {1, 2,3,4,};
+
+    const std::vector<int> ks = {1, 2,3,4,};
+
     const std::vector<int> bs = {1, 2,3,4,};
-    float T = -7;
-    clock_t start, end;
+    float T = 8;
+    struct timespec start, end;
+
 //------------------------
-    start = clock();
+// EXHAUSTIVE
+    clock_gettime(CLOCK_MONOTONIC, &start);
     auto result_exhaustive = exhaustive(profile, alphabet, T);
-    end = clock();
-    std::size_t size_exhaustive = std::get<0>(*result_exhaustive).size();
-    clock_t time_exhaustive = end - start;
+    clock_gettime(CLOCK_MONOTONIC, &end);
+    float size_exhaustive = (std::get<0>(result_exhaustive)).size();
+    double time_exhaustive = ((end.tv_sec - start.tv_sec) * 1e9 + (end.tv_nsec - start.tv_nsec)) * 1e-9;
+    std::sort(std::get<1>(result_exhaustive).begin(), std::get<1>(result_exhaustive).end());
+    std::reverse(std::get<1>(result_exhaustive).begin(), std::get<1>(result_exhaustive).end());
 //-------------------------
-    for (const auto &k : ks) {
-        start = clock();
-        const std::size_t k2 = 2;
-        auto result = heuristic1<s, n, k2> (profile, alphabet, T);
-        end = clock();
-        clock_t time_result = end - start;
-        clock_t speedup = time_result/time_exhaustive;
-        float found_fraction = std::get<0>(*result).size()/size_exhaustive;
+// HEURISTIC 1
+    std::vector<float> found_fractions_h1 = {};
+    std::vector<float> speedups_h1 ={};
+    for (auto &k : ks) { //I cannot loop over this if k is in the template.
+        clock_gettime(CLOCK_MONOTONIC, &start);
+        auto result = heuristic1 (profile, alphabet, T, k);
+        clock_gettime(CLOCK_MONOTONIC, &end);
+        double time_result = ((end.tv_sec - start.tv_sec) * 1e9 + (end.tv_nsec - start.tv_nsec)) * 1e-9;
+        if (time_result != 0) speedups_h1.push_back(time_exhaustive/time_result);
+        found_fractions_h1.push_back((std::get<0>(result)).size()/size_exhaustive);
     }
+// HEURISTIC 2
+    std::vector<float> found_fractions_h2 = {};
+    std::vector<float> speedups_h2 ={};
     for (auto &b : bs) {
-        start = clock();
-        auto result = heuristic2<s, n, n> (profile, alphabet, T, b);
-        end = clock();
-        clock_t time_result = end - start;
-        clock_t speedup = time_result/time_exhaustive;
-        float found_fraction = result->size()/size_exhaustive;
+        clock_gettime(CLOCK_MONOTONIC, &start);
+        auto result = heuristic2 (profile, alphabet, T, b);
+        clock_gettime(CLOCK_MONOTONIC, &end);
+        double time_result = ((end.tv_sec - start.tv_sec) * 1e9 + (end.tv_nsec - start.tv_nsec)) * 1e-9;
+        if (time_result != 0) speedups_h2.push_back(time_exhaustive/time_result);
+        found_fractions_h2.push_back((result).size()/size_exhaustive);
     }
+
+//    // HEURISTIC 3
+//    std::vector<float> found_fractions_h3 = {};
+//    std::vector<float> speedups_h3 ={};
+//    for (auto &k : ks) {
+//        clock_gettime(CLOCK_MONOTONIC, &start);
+//        auto result = heuristic3 (profile, alphabet, T, k);
+//        clock_gettime(CLOCK_MONOTONIC, &end);
+//        double time_result = ((end.tv_sec - start.tv_sec) * 1e9 + (end.tv_nsec - start.tv_nsec)) * 1e-9;
+//        if (time_result != 0) speedups_h3.push_back(time_exhaustive/time_result);
+//        found_fractions_h3.push_back((result).size()/size_exhaustive);
+//    }
+
+    // save results
+
+    std::ofstream o(folder+"results\\"+file_name.substr(0,6) + ".py"); // "here.py");//
+    o << "ks = [" << outstring(ks) << "]" <<std::endl;
+    o << "found_fractions_h1 = [" << outstring(found_fractions_h1) << "]" <<std::endl;
+    o << "speedups_h1 = [" << outstring(speedups_h1) << "]" <<std::endl;
+    o << "bs = [" << outstring(bs) << "]" <<std::endl;
+    o << "found_fractions_h2 = [" << outstring(found_fractions_h2) << "]" <<std::endl;
+    o << "speedups_h2 = [" << outstring(speedups_h2) << "]" <<std::endl;
+    o.close();
     return 0;
 
-}
+    }
+
+
 #endif //UNTITLED_EVALUATION_H

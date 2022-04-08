@@ -11,15 +11,15 @@
 
 
 struct tuples_comparator {
-    bool operator() (const std::tuple<char, int, float>& tuple1, // string, (scores,) score
+    bool operator() (const std::tuple<char, int, float>& tuple1,
                      const std::tuple<char, int, float>& tuple2) const{
-        return (std::get<2>(tuple1) > std::get<2>(tuple2)); //Or the other way around?
+        return (std::get<2>(tuple1) > std::get<2>(tuple2));
     }
 };
 struct b_best_comparator {
-    bool operator() (const std::tuple<std::string, float>& tuple1, // string, (scores,) score
+    bool operator() (const std::tuple<std::string, float>& tuple1,
                      const std::tuple<std::string, float>& tuple2) const{
-        return (std::get<1>(tuple1) > std::get<1>(tuple2)); //Or the other way around?
+        return (std::get<1>(tuple1) > std::get<1>(tuple2));
     }
 };
 
@@ -29,7 +29,7 @@ void enumerate_tuples(std::array<std::array<float, s>, n>& profile,
                       float T,
                       std::vector<std::tuple<char, int, float>>& tuples,
                       std::string& best_string,
-                      std::array<float, (int) n +1>& best_remaining_scores){
+                      std::vector<float> best_remaining_scores){
     for (int i = 0; i < n; i++)
         for (int a = 0; a < s; a++) {
             char a_char = alphabet[a];
@@ -44,13 +44,13 @@ void enumerate_tuples(std::array<std::array<float, s>, n>& profile,
 }
 
 
-template <std::size_t s, std::size_t n, std::size_t k>
+template <std::size_t s, std::size_t n>
 auto heuristic2(std::array<std::array<float, s>, n>&  profile, std::string& alphabet, float T, int b){
     std::string best_string(n, ' ');
-    std::array<float, (int) n/k + 1> best_remaining_scores; // (int) std::ceil((float) n/k)
+    std::vector<float> best_remaining_scores(n); // (int) std::ceil((float) n/k)
     float best_score;
     std::vector<std::tuple<char, int, float>> tuples;
-    get_best_string<s, n, k> (profile, best_remaining_scores, best_string, best_score, alphabet);
+    get_best_string(profile, best_remaining_scores, best_string, best_score, alphabet);
     enumerate_tuples(profile, alphabet, T, tuples, best_string, best_remaining_scores);
 
     // Hash table
@@ -89,11 +89,9 @@ auto heuristic2(std::array<std::array<float, s>, n>&  profile, std::string& alph
                     }
                 }
             }
-
         }
     }
-    std::cout << &strings << "\n";
-    return(&strings);        // return 2 character arrays.
+    return(strings);
 }
 
 int test_heuristic2() {
@@ -109,8 +107,7 @@ int test_heuristic2() {
     std::string alphabet = {'A', 'C', 'G', 'T'};
     alphabet_dict = create_alphabet_dict<s> (alphabet);
 
-    auto strings = heuristic2<s, n, k> (profile, alphabet, -7, b);
-    std::cout << &strings << "\n";
+    auto strings = heuristic2<s, n> (profile, alphabet, -7, b);
     return 0;
 }
 
