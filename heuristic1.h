@@ -32,7 +32,6 @@ void get_best_string(std::array<std::array<float, s>, n>& profile,
     best_score = std::accumulate(best_kmer_scores.begin(), best_kmer_scores.end(), 0.0);
     for (int i = 0; i < std::ceil( n/k); i++) {
         best_remaining_scores[i] = best_score - best_kmer_scores[i];
-        //
     }
 }
 
@@ -47,36 +46,26 @@ return true;
 template <std::size_t s, std::size_t n>
 void enumerate_kmers(std::array<std::array<float, s>, n>& profile, std::string& alphabet, float T, int k,
                      std::vector<std::string>& strings, std::vector<float>& scores, std::string& new_string,
-                      std::vector<float>& score_cashe, int i=0, int ik=0, bool new_equals_best = 1) {
+                      std::vector<float>& score_cashe, int i=0, int ik=0) {
     // This is similar to the enumeration function in the exhaustive search, however,
     // now we also check that the kmers are not part of the best string.
     for (int a = 0; a < s; a++) {
         float score = score_cashe[ik] + profile[i+ik][a];
-        //if (score > T) { // See comment in exhaustive search.
-        bool a_equals_best = (alphabet[a] ==  strings[0][i*k + ik]);
-        if (ik == k - 1 or i*k + ik == n-1) { // or if i*k + ik < n, for the last k-mer.
-            if (not (a_equals_best and new_equals_best)){
-                if (score > T) {
-                new_string[i*k + ik] = alphabet[a];
-                strings.push_back(new_string);
-                scores.push_back(score);
+        if (score > T) { // See comment in exhaustive search.
+            new_string[i*k + ik] = alphabet[a];
+            if (ik == k - 1 or i*k + ik == n-1) { // or if i*k + ik < n, for the last k-mer.
+                if (not check_in_best(new_string, strings[0], i * k,i * k + k)) {
+                    strings.push_back(new_string);
+                    scores.push_back(score);
                 }
+            } else {
+                score_cashe[ik + 1] = score;
+                enumerate_kmers(profile, alphabet, T, k, strings, scores, new_string, score_cashe, i, (ik + 1));
             }
-        } else {
-            score_cashe[ik + 1] = score;
-            if (not a_equals_best){ // in some cases new_string[i*k + ik] already contains alphabet[a]
-                new_string[i*k + ik] = alphabet[a];
-            }
-            enumerate_kmers(profile, alphabet, T, k, strings, scores, new_string,  score_cashe,   i, (ik + 1), (a_equals_best and new_equals_best));
         }
-        //}
     }
 }
-    // You could improve the algorithm for some of the cases, by not storing these "new_strings" and "new_string" scores at all, ,
 
-    // alternative is to only store i:i+k, and replace the "new_string" kmer in the most probable string each time the threshold is met:
-    //                std::string string = most_probable_string
-    //                     for i in alphabet
 
 
 template <std::size_t s, std::size_t n>
@@ -90,9 +79,9 @@ auto heuristic1(std::array<std::array<float, s>, n>&  profile, std::string& alph
     for (int i = 0; i < std::ceil( (float)n/k); i++) { // For each k-sized column in the profile matrix.
         std::vector<float> score_cashe(k); score_cashe[0] = {best_remaining_scores[i]};
         std::string new_string = best_string; // The new string starts with a copy of the best string.
-        enumerate_kmers(profile, alphabet, T, k, strings, scores, new_string,  score_cashe,  i, 0, 1);
+        enumerate_kmers(profile, alphabet, T, k, strings, scores, new_string,  score_cashe,  i, 0);
     }
-    return std::make_tuple(strings, scores);
+    return std::make_tuple(std::move(strings), std::move(scores));
 }
 
 

@@ -13,8 +13,7 @@ template <std::size_t s, std::size_t n>
 void get_best_string_heur3(std::array<std::array<float, s>, n>& profile,
                       std::vector<float>& best_remaining_scores,
                       std::string& best_string, float& best_score,
-                      std::string& alphabet, int k=(int) n,
-                      bool slide = 1){
+                      std::string& alphabet, int k=(int) n){
     std::vector<float>& best_kmer_scores = best_remaining_scores;
     for (int i = 0; i < n-k+1; i++) { // CHANGED
         float score = 0;
@@ -22,44 +21,38 @@ void get_best_string_heur3(std::array<std::array<float, s>, n>& profile,
             std::array<float,s>& profile_column = profile[i + ik];
             typename std::array<float,s>::iterator max = std::max_element(profile_column.begin(), profile_column.end()); //std::vector<float>::iterator
             score += *max;
-            if ((i - 1)% k == 0 || i ==0){ // CHANGED
+            if (i==0 || ik==k-1){//i% k == 0 || i >= n-k){ // CHANGED
                 best_string[i + ik] = alphabet[std::distance(profile_column.begin(),max)]; // CHANGED
+                best_score += *max;
             }
         }
         best_kmer_scores[i] = score; // first they are the best_kmer_scores
     }
-    best_score = std::accumulate(best_kmer_scores.begin(), best_kmer_scores.end(), 0.0);
     for (int i = 0; i < n-k+1; i++) { // CHANGED
         best_remaining_scores[i] = best_score - best_kmer_scores[i];
     }
 }
 
+
+
 template <std::size_t s, std::size_t n>
-void enumerate_kmers(std::array<std::array<float, s>, n>& profile, std::string& alphabet, float T, int k,
+void enumerate_kmers_heuristic3(std::array<std::array<float, s>, n>& profile, std::string& alphabet, float T, int k,
                      std::unordered_map<std::string, float>& strings,  std::string& new_string,
-                     std::vector<float>& cashe, int ik=0,
-                     int i=0, std::string best_string={}, bool slide=0) { // ALTERNATIVE extra parameter, bool new_equals_best = 1
-    // std::string& best_string = strings[0];
+                     std::vector<float>& score_cashe, int ik=0,
+                     int i=0, std::string best_string={}) {
+    // This is similar to the enumeration function in the exhaustive search, however,
+    // now we also check that the kmers are not part of the best string.
     for (int a = 0; a < s; a++) {
-        std::cout << cashe[ik] << std::endl;
-        float score = cashe[ik] + profile[i+ik][a]; // WARNING: Segmentation fault
-        //if (score > T) { // ATTENTION: By placing the threshold here, it can already prune a set of k-mers, if the first nucleotides in the k-mer would already cause the score to not reach the threshold
-            if (ik == k - 1 or i*k + ik == n-1) { // or if i*k + ik = n - 1, for the last k-mer.
-                if (score > T) {
-                    new_string[i * k + ik] = alphabet[a];
-                    if (not check_in_best(new_string, best_string, i * k,
-                                          i * k + k)) { //ATLERNATIVE: if not a_equals_best AND new_equals_best
-                        strings[new_string] = score; // CHANGED
-                    }
-                }
+        float score = score_cashe[ik] + profile[i+ik][a];
+        if (score > T) { // See comment in exhaustive search.
+            new_string[i + ik] = alphabet[a];
+            if (ik == k - 1 or i + ik == n-1) { // or if i*k + ik < n, for the last k-mer.
+                    strings[new_string] = score;
             } else {
-                cashe[ik + 1] = score;
-                // ATLERNATIVE: if not a_equals_best
-                new_string[i*k + ik] = alphabet[a]; // in some cases new_string[i*k + ik] already contains alphabet[a], hence the alternative, for "check_in_best"
-                // You could improve the algorithm for some of the cases, by not storing these "new_strings" and "new_string" scores, (cashe),
-                enumerate_kmers(profile, alphabet, T, k, strings, new_string,  cashe,  (ik + 1), i, best_string);
+                score_cashe[ik + 1] = score;
+                enumerate_kmers_heuristic3(profile, alphabet, T, k, strings, new_string,  score_cashe,  (ik + 1), i, best_string);
             }
-        //}
+        }
     }
 }
 
@@ -68,19 +61,18 @@ auto heuristic3(std::array<std::array<float, s>, n>&  profile, std::string& alph
     std::string best_string(n, ' ');
     std::vector<float> best_remaining_scores((int) n ); // CHANGED
     float best_score;
-    get_best_string_heur3<s, n> (profile, best_remaining_scores, best_string, best_score, alphabet, k, 1);
-    std::unordered_map<std::string, float> strings;
+    get_best_string_heur3<s, n> (profile, best_remaining_scores, best_string, best_score, alphabet, k);
+    std::unordered_map<std::string, float> strings;// CHANGED: should be a hash table now, because doubles are generated.
     strings[best_string] = best_score;
-    for (int i = 0; i < n-k; i++) { // CHANGED // Signal: SIGTRAP (Trace/breakpoint trap)
+    for (int i = 0; i < n-k+1; i++) { // CHANGED // Signal: SIGTRAP (Trace/breakpoint trap)
         int ik = 0;
-        std::cout << i << std::endl;
-        //if (x > T) {
         std::vector<float> cashe(k); cashe[0] = best_remaining_scores[i];
-        std::string new_string = best_string; // CHANGE: should be a hash table now.
-        enumerate_kmers(profile, alphabet, T, k, strings,  new_string,  cashe, ik,  i, best_string);
+        std::string new_string = best_string;
+        enumerate_kmers_heuristic3(profile, alphabet, T, k, strings,  new_string,  cashe, ik,  i, best_string);
     }
     return(strings);        // return 2 character arrays.
 }
+
 
 int test_heuristic3() {
     const std::size_t n = 3;

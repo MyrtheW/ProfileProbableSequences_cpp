@@ -62,29 +62,30 @@ auto heuristic2(std::array<std::array<float, s>, n>&  profile, std::string& alph
 
     // Loop over the tuples of nucleotides, and add purmutate the b best strings at these positions.
     for (auto tup = tuples.begin(); tup != tuples.end(); tup++) // Each tuple consists of (nucleotide, i, score)
-        // ASK: I loop over a copy of the b_best, because of changes that are made during looping...
+        // I loop over a copy of the b_best, because of changes that are made during looping.
     {
         auto copy_b_best_strings = b_best_strings;
         for (auto existing_string_score = copy_b_best_strings.begin();
-             existing_string_score != copy_b_best_strings.end(); existing_string_score++) {
-            std::string new_string = std::get<0>(*existing_string_score);
-            new_string[std::get<1>(*tup)] = std::get<0>(*tup);
-            if (not strings[new_string]) {
-                float new_score = std::get<1>(*existing_string_score)
-                                  - profile[std::get<1>(*tup)][nucl_to_rank(std::get<0>(*existing_string_score)[std::get<1>(*tup)])]
-                                  + std::get<2>(*tup);
-                if (new_score > T) {
+            existing_string_score != copy_b_best_strings.end(); existing_string_score++) {
+            float new_score = std::get<1>(*existing_string_score)
+                              - profile[std::get<1>(*tup)][nucl_to_rank(std::get<0>(*existing_string_score)[std::get<1>(*tup)])]
+                              + std::get<2>(*tup); // calculate the new score from the existing string and the value of the nucleotide that is going to be replaced.
+            if (new_score > T) {
+                std::string new_string = std::get<0>(*existing_string_score);
+                new_string[std::get<1>(*tup)] = std::get<0>(*tup);
+                if (not strings[new_string]){ //strings.find(new_string) == strings.end()) { // Check if element already exists in the hash table. You  must explicitely do this, otherwise you might insert duplicates in the top b.
+                    // Alternatively you can dot his before calculating and thresholding the score.
                     strings[new_string] = new_score;
                     if (b_best_strings.size() < b) {
                         //If the b best strings is not completely filled yet, then the new string needs to be added:
-                        b_best_strings.push_back(std::make_tuple(new_string, new_score));
+                        b_best_strings.push_back(std::make_tuple(std::move(new_string), std::move(new_score)));
                         std::push_heap(b_best_strings.begin(), b_best_strings.end(), b_best_comparator());
                     } else if (new_score > std::get<1>(b_best_strings[0])) {
                         //If the new string has a high enough score, it needs to be placed in the b best strings:
                         std::pop_heap(b_best_strings.begin(), b_best_strings.end(), b_best_comparator());
                         b_best_strings.pop_back();
 
-                        b_best_strings.push_back(std::make_tuple(new_string, new_score));
+                        b_best_strings.push_back(std::make_tuple(std::move(new_string), std::move(new_score)));
                         std::push_heap(b_best_strings.begin(), b_best_strings.end(), b_best_comparator());
                     }
                 }

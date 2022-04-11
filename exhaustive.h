@@ -47,28 +47,18 @@ void enumerate_strings(std::array<std::array<float, s>, n> & profile, std::strin
     // it will be added to the strings vector.
     for (int a = 0; a < s; a++) {
         float score = score_cashe[ik] + profile[ik][a];
-        // It is  possible to already threshold a partially created string of length < n, in case profile matrices are used
-        // in which all values are =< 0. It does not work with logodd matrices which also contain values > 0, because then
-        // a string's score may still increase when growing it in length. However, I observed that early thresholding can be
-        // very beneficial, particularly when there are many nucleotides with a very low probability in the matrix.
-        // In order to place the threshold here, logodd matrices can be converted by substracting the highest value
-        // in the matrix (h) from all the values in the matrix, and n*h from the threshold T.
-        //if (score > T) {
+        if (score > T) {
+            string[ik] = alphabet[a];
             if (ik == n - 1) {
-                if (score > T) {
-                    string[ik] = alphabet[a];
-                    strings.push_back(string);
-                    scores.push_back(score);
-                }
+                strings.push_back(string);
+                scores.push_back(score);
             } else {
                 score_cashe[ik + 1] = score;
-                string[ik] = alphabet[a];
                 enumerate_strings(profile, alphabet, T, strings, scores, (ik + 1), score_cashe, string);
             }
-        //}
+        }
     }
-} // ASK: this function does not output anything, because it changes the input-datastructures. Is that a good practice?
-
+}
 
 template <std::size_t n, std::size_t s>
 auto exhaustive(std::array<std::array<float, s>, n> &  profile, std::string alphabet, float T){
@@ -78,7 +68,8 @@ auto exhaustive(std::array<std::array<float, s>, n> &  profile, std::string alph
     std::vector<std::string> strings;
     std::vector<float> scores={};
     enumerate_strings(profile, alphabet,  T, strings, scores,  ik);
-    return std::make_tuple(strings, scores);        //ASK: I tried to return &strings, but that doesn't work. Now it is not so efficient, because a copy is made.
+    return std::make_tuple(std::move(strings), std::move(scores));
+    //ASK: I tried to return &strings, but that doesn't work. Now it is not so efficient, because a copy is made.
 }
 
 

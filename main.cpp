@@ -1,9 +1,14 @@
 #include <iostream>
 #include "exhaustive.h"
 #include "heuristic1.h"
+#include "heuristic2.h"
+#include "heuristic3.h"
+#include "evaluation .h"
+#include "test_example.h"
 //#include seqan
 
 int main() {
-    test_heuristic1();
+    //test_example();
+    evaluation();
     return 0;
 }

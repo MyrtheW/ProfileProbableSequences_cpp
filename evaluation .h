@@ -32,7 +32,7 @@ void read_matrix (std::string filename, std::array<std::array<float, s>, n>&  pr
                 profile[i][j] = x_new;
             }
     }
-    }
+    }else{ std::cout << "File not found!";}
 }
 
 
@@ -45,16 +45,20 @@ std::string outstring(std::vector<T> out_array){
 
 int evaluation() {
 // SET PARAMETERS
-    std::string file_name = "MA0007.1.jaspar.txt";
-    const std::vector<int> ks = {1, 2,3,4,};
-    const std::vector<int> bs = {1, 2,3,4,};
-    float T = 9; // Threshold
-    const std::size_t n =  12;
+    std::string file_name = "MA0007.1.jaspar.txt"; // using T=9, background corrected, size 12
+//    file_name = "RF00523.afa.txt.txt";
+//    file_name = "RF00005.afa.txt.txt";
+    const std::vector<int> ks = {1, 2,3,4,5,6,7,8};
+    const std::vector<int> bs = {1, 5,10, 20, 50, 1000, 2000}; // b must be larger than ... if you want to find ... candidates
+    const std::size_t n =  14;
+    float T = std::log2(std::pow(0.53, n)); // Threshold
+
 
 // READ FILE
 // Read in the profile matrix and the alphabet
     std::string folder = "C:\\Users\\myrth\\Documents\\SCHOOL\\1E SEMESTER MASTER\\S; stage\\Python code\\data\\DNA_profiles\\";
-    std::cout << folder + file_name <<std::endl;
+//    folder = "C:\\Users\\myrth\\Documents\\SCHOOL\\1E SEMESTER MASTER\\S; stage\\Python code\\data\\RNA_profiles\\";
+    std::cout << folder +  file_name <<std::endl;
     const std::size_t s = 4;
     std::array<std::array<float, s>, n> profile;
     std::string alphabet;
@@ -69,8 +73,8 @@ int evaluation() {
     clock_gettime(CLOCK_MONOTONIC, &end);
     float size_exhaustive = (std::get<0>(result_exhaustive)).size();
     double time_exhaustive = ((end.tv_sec - start.tv_sec) * 1e9 + (end.tv_nsec - start.tv_nsec)) * 1e-9;
-    std::sort(std::get<1>(result_exhaustive).begin(), std::get<1>(result_exhaustive).end());
-    std::reverse(std::get<1>(result_exhaustive).begin(), std::get<1>(result_exhaustive).end());
+    //std::sort(std::get<1>(result_exhaustive).begin(), std::get<1>(result_exhaustive).end());
+    //std::reverse(std::get<1>(result_exhaustive).begin(), std::get<1>(result_exhaustive).end());
 
 // HEURISTIC 1
     std::vector<float> found_fractions_h1 = {};
@@ -96,17 +100,17 @@ int evaluation() {
         found_fractions_h2.push_back((result).size()/size_exhaustive);
     }
 
-//    // HEURISTIC 3
-//    std::vector<float> found_fractions_h3 = {};
-//    std::vector<float> speedups_h3 ={};
-//    for (auto &k : ks) {
-//        clock_gettime(CLOCK_MONOTONIC, &start);
-//        auto result = heuristic3 (profile, alphabet, T, k);
-//        clock_gettime(CLOCK_MONOTONIC, &end);
-//        double time_result = ((end.tv_sec - start.tv_sec) * 1e9 + (end.tv_nsec - start.tv_nsec)) * 1e-9;
-//        if (time_result != 0) speedups_h3.push_back(time_exhaustive/time_result);
-//        found_fractions_h3.push_back((result).size()/size_exhaustive);
-//    }
+    // HEURISTIC 3
+    std::vector<float> found_fractions_h3 = {};
+    std::vector<float> speedups_h3 ={};
+    for (auto &k : ks) {
+        clock_gettime(CLOCK_MONOTONIC, &start);
+        auto result = heuristic3 (profile, alphabet, T, k);
+        clock_gettime(CLOCK_MONOTONIC, &end);
+        double time_result = ((end.tv_sec - start.tv_sec) * 1e9 + (end.tv_nsec - start.tv_nsec)) * 1e-9;
+        if (time_result != 0) speedups_h3.push_back(time_exhaustive/time_result);
+        found_fractions_h3.push_back((result).size()/size_exhaustive);
+    }
 
 // SAVE RESULTS
     // Saving results to a python library, that can be read in to make figures.
@@ -118,6 +122,8 @@ int evaluation() {
     o << "bs = [" << outstring(bs) << "]" <<std::endl;
     o << "found_fractions_h2 = [" << outstring(found_fractions_h2) << "]" <<std::endl;
     o << "speedups_h2 = [" << outstring(speedups_h2) << "]" <<std::endl;
+    o << "found_fractions_h3 = [" << outstring(found_fractions_h3) << "]" <<std::endl;
+    o << "speedups_h3 = [" << outstring(speedups_h3) << "]" <<std::endl;
     o.close();
     return 0;
     }
