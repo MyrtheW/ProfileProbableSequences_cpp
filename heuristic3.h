@@ -64,7 +64,7 @@ auto heuristic3(std::array<std::array<float, s>, n>&  profile, std::string& alph
     get_best_string_heur3<s, n> (profile, best_remaining_scores, best_string, best_score, alphabet, k);
     std::unordered_map<std::string, float> strings;// CHANGED: should be a hash table now, because doubles are generated.
     strings[best_string] = best_score;
-    for (int i = 0; i < n-k+1; i++) { // CHANGED // Signal: SIGTRAP (Trace/breakpoint trap)
+    for (int i = 0; i < n-k+1; i++) { // CHANGED
         int ik = 0;
         std::vector<float> cashe(k); cashe[0] = best_remaining_scores[i];
         std::string new_string = best_string;

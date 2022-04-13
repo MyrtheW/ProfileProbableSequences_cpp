@@ -43,15 +43,15 @@ std::string outstring(std::vector<T> out_array){
     return out;
 }
 
-int evaluation() {
+int evaluation_top_fraction() {
 // SET PARAMETERS
     std::string file_name = "MA0007.1.jaspar.txt"; // using T=9, background corrected, size 12
 //    file_name = "RF00523.afa.txt.txt";
 //    file_name = "RF00005.afa.txt.txt";
     const std::vector<int> ks = {1, 2,3,4,5,6,7,8};
     const std::vector<int> bs = {1, 5,10, 20, 50, 1000, 2000}; // b must be larger than ... if you want to find ... candidates
-    const std::size_t n =  14;
-    float T = std::log2(std::pow(0.53, n)); // Threshold
+    const std::size_t n =  8;
+    float T = std::log2(std::pow(0.4, n)); // Threshold , 0.53 for n=14
 
 
 // READ FILE
@@ -128,6 +128,7 @@ int evaluation() {
     return 0;
     }
 
+void evaluation_vsn() {
 
-
+    }
 #endif //UNTITLED_EVALUATION_H
