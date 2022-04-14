@@ -17,7 +17,7 @@ void get_best_string(std::array<std::array<float, s>, n>& profile,
         float max_score = *max;
         best_score += max_score;
         best_string[i] = alphabet[std::distance(profile[i].begin(), max)];
-        //for (int a = 0; a < s; a++){ profile[i][a] -= max_score;}
+        for (int a = 0; a < s; a++){ profile[i][a] -= max_score;}
         }
 }
 
@@ -58,7 +58,7 @@ void enumerate_kmers(std::array<std::array<float, s>, n>& profile, std::string& 
 
 template <std::size_t s, std::size_t n>
 auto heuristic1(std::array<std::array<float, s>, n>  profile, std::string& alphabet, float T, int k=1){ //CHANGE
-    std::string best_string(n, ' '); float best_score;
+    std::string best_string(n, ' '); float best_score=0;
     get_best_string<s, n> (profile, best_string, best_score, alphabet, k);
     std::vector<std::string> strings = {best_string};
     T -= best_score;

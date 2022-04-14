@@ -65,7 +65,7 @@ template <std::size_t n, std::size_t s>
 auto exhaustive(std::array<std::array<float, s>, n>  profile, std::string alphabet, float T){
     // This function does the exhaustive search, and is mainly a wrapper for the recursive function that enumerates
     // the strings.
-    std::string best_string(n, ' '); float best_score;
+    std::string best_string(n, ' '); float best_score=0;
     get_best_string<s, n> (profile, best_string, best_score, alphabet, 1);
     T-= best_score;
 

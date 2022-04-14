@@ -54,7 +54,7 @@ void test_example() {
     const std::size_t s = 4;
     float T = -6.5;//-12;//-6.64; equals =0.01 normalized
     int b = 2;//256;
-    std::size_t k = 2;
+    std::size_t k = 1;
 
     // this is a small example matrix, that I use in my illustrations
     std::array<std::array<float, s>, n> profile = {{{0.3, 0.2, 0.4, 0.1,},
@@ -67,7 +67,7 @@ void test_example() {
 
 
     profile = matrix_operation(profile, &std::log2f); // takes the logarithm
-    profile = matrix_operation(profile, plus_one); T +=8;
+    //profile = matrix_operation(profile, plus_one); T +=8;
     std::string alphabet = {'A', 'C', 'G', 'T'};
     alphabet_dict = create_alphabet_dict<s> (alphabet);
 

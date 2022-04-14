@@ -50,8 +50,9 @@ int evaluation_top_fraction() {
 //    file_name = "RF00005.afa.txt.txt";
     const std::vector<int> ks = {1, 2,3,4,5,6,7,8};
     const std::vector<int> bs = {1, 5,10, 20, 50, 1000, 2000}; // b must be larger than ... if you want to find ... candidates
-    const std::size_t n =  8;
-    float T = std::log2(std::pow(0.4, n)); // Threshold , 0.53 for n=14
+    const std::size_t n =  20;
+    float T = std::log2(std::pow(0.5, n)); // Threshold , 0.53 for n=14, 0.4 for n=8 --> 301 results, 0.3 for n=8, --> 3000 results
+    // for n =20 --> exhaustive time 0.017 s, 36500 results.
 
 
 // READ FILE
@@ -75,7 +76,7 @@ int evaluation_top_fraction() {
     double time_exhaustive = ((end.tv_sec - start.tv_sec) * 1e9 + (end.tv_nsec - start.tv_nsec)) * 1e-9;
     //std::sort(std::get<1>(result_exhaustive).begin(), std::get<1>(result_exhaustive).end());
     //std::reverse(std::get<1>(result_exhaustive).begin(), std::get<1>(result_exhaustive).end());
-
+    std::cout << time_exhaustive;
 // HEURISTIC 1
     std::vector<float> found_fractions_h1 = {};
     std::vector<float> speedups_h1 ={};
