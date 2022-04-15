@@ -27,7 +27,7 @@ void print(T a) {
     std::cout << ", ";
 }
 
-void print(std::string a) {
+void print(std::string& a) {
     std::cout << "\"";
     std::cout << a;
     std::cout << "\", ";
@@ -50,14 +50,14 @@ float plus_one(float x){
     return (x+2);
 }
 void test_example() {
-    const std::size_t n = 4;
-    const std::size_t s = 4;
+    std::size_t n = 4;
+    std::size_t s = 4;
     float T = -6.5;//-12;//-6.64; equals =0.01 normalized
     int b = 2;//256;
     std::size_t k = 1;
 
     // this is a small example matrix, that I use in my illustrations
-    std::array<std::array<float, s>, n> profile = {{{0.3, 0.2, 0.4, 0.1,},
+    std::vector<std::vector<float>> profile = {{{0.3, 0.2, 0.4, 0.1,},
                                                     {0.2, 0.25, 0.25, 0.3,},
                                                     {0.5, 0.1, 0.2, 0.2,},
                                                     {0.4, 0.4, 0.1, 0.1,}}};
@@ -66,13 +66,13 @@ void test_example() {
     //    -1            -3.32193 -2.32193 -2.32193
 
 
-    profile = matrix_operation(profile, &std::log2f); // takes the logarithm
+    profile = matrix_operation(profile,n,s, &std::log2f); // takes the logarithm
     //profile = matrix_operation(profile, plus_one); T +=8;
     std::string alphabet = {'A', 'C', 'G', 'T'};
-    alphabet_dict = create_alphabet_dict<s> (alphabet);
+    alphabet_dict = create_alphabet_dict (alphabet);
 
     // EXHAUSTIVE
-    auto result_exhaustive = exhaustive(profile, alphabet, T);
+    auto result_exhaustive = exhaustive(profile,n,s, alphabet, T);
 //    std::sort(std::get<1>(result_exhaustive).begin(), std::get<1>(result_exhaustive).end());
 //    std::reverse(std::get<1>(result_exhaustive).begin(), std::get<1>(result_exhaustive).end());
 //    for (auto score = std::get<1>(result_exhaustive).begin(); score != std::get<1>(result_exhaustive).end(); score++){
@@ -91,14 +91,15 @@ void test_example() {
 
 
     // HEURISTIC 1
-    auto result_heuristic1 = heuristic1 (profile, alphabet, T, k);
+    auto result_heuristic1 = heuristic1 (profile,n,s, alphabet, T, k);
 
     // HEURISTIC 2
-    auto result_heuristic2 = heuristic2 (profile, alphabet, T, b);
+    auto result_heuristic2 = heuristic2 (profile,n,s, alphabet, T, b);
     //std::sort(result_heuristic2.begin(), result_heuristic2.end(), hash_tuples_comparator());
 
-    auto result_heuristic3 = heuristic3 (profile, alphabet, T, k); // For k=2; length should be that of heuristic 1, +9. For k=3, length should be
-    //std::sort(result_heuristic2.begin(), result_heuristic2.end(), hash_tuples_comparator());
+    // HEURISTIC 3
+    auto result_heuristic3 = heuristic3 (profile, n,s, alphabet, T, k); // For k=2; length should be that of heuristic 1, +9. For k=3, length should be
+
 
 
     //PRINTING OUTPUT
@@ -106,18 +107,15 @@ void test_example() {
     print(std::get<1>(result_exhaustive)); std::cout<<std::endl;
     print(std::get<0>(result_heuristic1)); std::cout<<std::endl;
     print(std::get<1>(result_heuristic1)); std::cout<<std::endl;
-    for (auto item = result_heuristic2.begin(); item != result_heuristic2.end(); item++){
+    print(std::get<0>(result_heuristic2)); std::cout<<std::endl;
+    print(std::get<1>(result_heuristic2)); std::cout<<std::endl;
+    for (auto item = result_heuristic3.begin(); item != result_heuristic3.end(); item++){
         print(std::get<0>(*item));
     }std::cout<<std::endl;
-    for (auto item = result_heuristic2.begin(); item != result_heuristic2.end(); item++){
+    for (auto item = result_heuristic3.begin(); item != result_heuristic3.end(); item++){
         print(std::get<1>(*item));
     }std::cout<<std::endl;
-    for (auto item = result_heuristic3.begin(); item != result_heuristic2.end(); item++){
-        print(std::get<0>(*item));
-    }std::cout<<std::endl;
-    for (auto item = result_heuristic3.begin(); item != result_heuristic2.end(); item++){
-        print(std::get<1>(*item));
-    }std::cout<<std::endl;
+
 }
 
 #endif //UNTITLED_TEST_EXAMPLE_H

@@ -8,8 +8,7 @@
 #include <algorithm>
 #include <numeric>
 
-template <std::size_t s, std::size_t n>
-void get_best_string(std::array<std::array<float, s>, n>& profile,
+void get_best_string(std::vector<std::vector<float>>& profile, std::size_t &n, std::size_t &s,
                      std::string& best_string, float& best_score,
                      std::string& alphabet, int k=(int) 1){
     for (int i = 0; i < n; i++) {
@@ -22,7 +21,6 @@ void get_best_string(std::array<std::array<float, s>, n>& profile,
 }
 
 
-
 bool check_in_best(std::string& arr1, std::string& arr2, int i, int i_end){
     for (i; i < i_end; i++)
         if (arr1[i] != arr2[i])
@@ -31,8 +29,7 @@ return true;
 }
 
 
-template <std::size_t s, std::size_t n>
-void enumerate_kmers(std::array<std::array<float, s>, n>& profile, std::string& alphabet, float T, int k,
+void enumerate_kmers(std::vector<std::vector<float>>& profile, std::size_t &n, std::size_t &s, std::string& alphabet, float T, int k,
                      std::vector<std::string>& strings, std::vector<float>& scores, std::string& new_string,
                       std::vector<float>& score_cashe, int i=0, int ik=0) {
     // This is similar to the enumeration function in the exhaustive search, however,
@@ -48,25 +45,23 @@ void enumerate_kmers(std::array<std::array<float, s>, n>& profile, std::string& 
                 }
             } else {
                 score_cashe[ik + 1] = score;
-                enumerate_kmers(profile, alphabet, T, k, strings, scores, new_string, score_cashe, i, (ik + 1));
+                enumerate_kmers(profile,n,s, alphabet, T, k, strings, scores, new_string, score_cashe, i, (ik + 1));
             }
         }
     }
 }
 
 
-
-template <std::size_t s, std::size_t n>
-auto heuristic1(std::array<std::array<float, s>, n>  profile, std::string& alphabet, float T, int k=1){ //CHANGE
+auto heuristic1(std::vector<std::vector<float>> profile, std::size_t &n, std::size_t &s, std::string& alphabet, float T, int k=1){ //CHANGE
     std::string best_string(n, ' '); float best_score=0;
-    get_best_string<s, n> (profile, best_string, best_score, alphabet, k);
+    get_best_string (profile,n,s, best_string, best_score, alphabet, k);
     std::vector<std::string> strings = {best_string};
     T -= best_score;
     std::vector<float> scores = {best_score};
     for (int i = 0; i < std::ceil( (float)n/k); i++) { // For each k-sized column in the profile matrix.
-        std::vector<float> score_cashe(k); score_cashe[0] = {0}; //CHANGE //best_remaining_scores[i]};
+        std::vector<float> score_cashe(k,0);
         std::string new_string = best_string; // The new string starts with a copy of the best string.
-        enumerate_kmers(profile, alphabet, T, k, strings, scores, new_string,  score_cashe,  i, 0);
+        enumerate_kmers(profile,n,s, alphabet, T, k, strings, scores, new_string,  score_cashe,  i, 0);
     }
     return std::make_tuple(std::move(strings), std::move(scores));
 }

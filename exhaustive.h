@@ -8,12 +8,11 @@
 
 // HELPER FUNCTIONS
 // ---------------------------------------------------------------------------------------
-template <std::size_t s>
 std::map <char, int> create_alphabet_dict(std::string& alphabet){
     // This is a temporary function required for the funciton below
     // that turns an alphabet {'A', 'C', 'G', 'T'}; into a dictionary {'A': 0, 'C': 1, 'G': 2, 'T': 3};
     std::map <char, int>  alphabet_dict;
-    for (int i = 0; i < s; i++) {
+    for (int i = 0; i < alphabet.size(); i++) {
     alphabet_dict[alphabet[i]] = i;
     }
     return alphabet_dict;
@@ -26,12 +25,12 @@ int nucl_to_rank(char& nucl){
     return alphabet_dict[nucl];
 }
 
-template <std::size_t k, std::size_t s>
-std::array<std::array<float, k>,s> matrix_operation(std::array<std::array<float, k>,s>& m,
+
+std::vector<std::vector<float>>  matrix_operation(std::vector<std::vector<float>> & m, std::size_t &n, std::size_t &s,
                                                     float (*func)(float)){
-    // A small helper function that can be used to do operations, such as taking logarithms, on matrices of s x k in size.
+    // A small helper function that can be used to do operations, such as taking logarithms, on matrices of s x n in size.
     for(int i=0; i<s; i++) {
-        for(int j=0; j<k; j++){
+        for(int j=0; j<n; j++){
             m[i][j] = func(m[i][j]);
         }
     }
@@ -39,10 +38,9 @@ std::array<std::array<float, k>,s> matrix_operation(std::array<std::array<float,
 }
 
 // ---------------------------------------------------------------------------------------
-template <std::size_t n, std::size_t s>
-void enumerate_strings(std::array<std::array<float, s>, n> & profile, std::string alphabet, float T,
+void enumerate_strings(std::vector<std::vector<float>>  & profile, std::size_t &n, std::size_t &s, std::string alphabet, float T,
                         std::vector<std::string>& strings, std::vector<float>& scores, float& best_score,
-                        int ik=0, std::array<float, n> score_cashe = {0}, std::string string = std::string(n, ' ')){
+                        int ik, std::vector<float>&score_cashe, std::string& string){
     // This enumerates the strings on demand. It starts at the first position and iterates recursively, depth-first through
     // all the letters in the alphabet. E.g. for n=3, it first creates AAA. If this string reaches the threshold,
     // it will be added to the strings vector.
@@ -55,25 +53,25 @@ void enumerate_strings(std::array<std::array<float, s>, n> & profile, std::strin
                 scores.push_back(score+  best_score);
             } else {
                 score_cashe[ik + 1] = score;
-                enumerate_strings(profile, alphabet, T, strings, scores, best_score, (ik + 1), score_cashe, string);
+                enumerate_strings(profile, n,s, alphabet, T, strings, scores, best_score, (ik + 1), score_cashe, string);
             }
         }
     }
 }
 
-template <std::size_t n, std::size_t s>
-auto exhaustive(std::array<std::array<float, s>, n>  profile, std::string alphabet, float T){
+auto exhaustive(std::vector<std::vector<float>>  profile, std::size_t &n, std::size_t &s, std::string alphabet, float T){
     // This function does the exhaustive search, and is mainly a wrapper for the recursive function that enumerates
     // the strings.
     std::string best_string(n, ' '); float best_score=0;
-    get_best_string<s, n> (profile, best_string, best_score, alphabet, 1);
+    get_best_string (profile,n,s, best_string, best_score, alphabet, 1);
     T-= best_score;
 
     std::vector<std::string> strings;
     std::vector<float> scores={};
-    enumerate_strings(profile, alphabet,  T, strings, scores, best_score);
+    std::vector<float> score_cashe(n,0); //init with n elements.
+    std::string string = std::string(n, ' ');
+    enumerate_strings(profile, n,s, alphabet,  T, strings, scores, best_score, 0, score_cashe, string);
     return std::make_tuple(std::move(strings), std::move(scores));
-    //ASK: I tried to return &strings, but that doesn't work. Now it is not so efficient, because a copy is made.
 }
 
 
