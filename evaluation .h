@@ -42,23 +42,20 @@ std::string outstring(std::vector<T> out_array){
     return out;
 }
 
-int evaluation_top_fraction() {
+int evaluation_top_fraction(std::string folder= "C:\\Users\\myrth\\Documents\\SCHOOL\\1E SEMESTER MASTER\\S; stage\\Python code\\data\\DNA_profiles\\",
+                            std::string file_name= "MA0007.1.jaspar.txt",
+                            std::size_t n =  20,
+                            float T = -18) {
 // SET PARAMETERS
-    std::string file_name = "MA0007.1.jaspar.txt"; // using T=9, background corrected, size 12
-//    file_name = "RF00523.afa.txt.txt";
-//    file_name = "RF00005.afa.txt.txt";
     std::vector<int> bs = {1, 5,10, 20, 50, 1000, 2000}; // b must be larger than ... if you want to find ... candidates
-    std::size_t n =  20;
     std::vector<int> ks = {1};
-    for (int x = 5; x > 1; x--) ks.push_back(std::ceil(n / x));
-    float T = std::log2(std::pow(0.53, n)); // Threshold , 0.53 for n=14 --> 267, 0.4 for n=8 --> 301 results, 0.3 for n=8, --> 3000 results
+    for (int x = 5; x > 0; x--) ks.push_back(std::ceil(n / x));
+    //std::log2(std::pow(0.53, n)); // Threshold , 0.53 for n=14 --> 267, 0.4 for n=8 --> 301 results, 0.3 for n=8, --> 3000 results
     // for n =20 0.53--> 2162. exhaustive time 0.017 s, 36500 results.
 
 
 // READ FILE
 // Read in the profile matrix and the alphabet
-    std::string folder = "C:\\Users\\myrth\\Documents\\SCHOOL\\1E SEMESTER MASTER\\S; stage\\Python code\\data\\DNA_profiles\\";
-//    folder = "C:\\Users\\myrth\\Documents\\SCHOOL\\1E SEMESTER MASTER\\S; stage\\Python code\\data\\RNA_profiles\\";
     std::cout << folder +  file_name <<std::endl;
     std::size_t s = 4;
     std::vector<std::vector<float>> profile(n, std::vector<float>(s));
@@ -182,7 +179,7 @@ void evaluation_vsn(std::string folder, std::string file_name) {
     std::size_t max_n = 20;
     float k_factor = 0.25;
     float normalized_threshold = 0.4;
-    std::map<int,float> normalized_thresholds = {{5,0.29}, {10,0.42}, {15,0.53}, {20,0.54}};
+    std::map<int,float> normalized_thresholds = {{5,0.29}, {8,0.35}, {10,0.42}, {15,0.53}, {20,0.54}};
 // Threshold , 0.53 for n=14 --> 267, 0.4 for n=8 --> 301 results, 0.3 for n=8, --> 3000 results
     // for n =20 0.53--> 2162. exhaustive time 0.017 s, 36500 results.
     struct timespec start, end;
@@ -244,14 +241,17 @@ void evaluation_vsn(std::string folder, std::string file_name) {
         time_result = ((end.tv_sec - start.tv_sec) * 1e9 + (end.tv_nsec - start.tv_nsec)) * 1e-9;
         if (time_result != 0) speedups_h3.push_back(time_exhaustive/time_result);
         found_fractions_h3.push_back((result3).size()/size_exhaustive);
-
         }
     // SAVE RESULTS
     // Saving results to a python library, that can be read in to make figures.
     std::ofstream o(folder+"results\\"+file_name.substr(0,6) + "_vsn.py"); // "here.py");//
     o << "file_name = \"" << file_name.substr(0,7) << "\"" <<std::endl;
     o << "ns = [" << outstring(ns) << "]" <<std::endl;
-    o << "normalized_thresholds = " << normalized_threshold <<std::endl;
+    std::vector<float> normalized_T_values;
+    for (auto item = normalized_thresholds.begin(); item != normalized_thresholds.end(); item++){
+        normalized_T_values.push_back(std::get<1>(*item));
+    }
+    o << "normalized_thresholds = [" << outstring(normalized_T_values) << "]"<<std::endl;
     o << "sizes_exhaustive = [" << outstring(sizes_exhaustive) << "]" <<std::endl;
     o << "times_exhaustive = [" << outstring(times_exhaustive) << "]" <<std::endl;
     o << "ks = [" << outstring(ks) << "]" <<std::endl;
@@ -265,4 +265,24 @@ void evaluation_vsn(std::string folder, std::string file_name) {
     o.close();
 
 }
+float OFV(float x, float y){
+    // y --> delta t / t exact.
+    // x--> found fraction.
+    return(x/100 +y/2);
+}
+
+//void multiple_matrices(){
+//    for (folder in DNA, RNA, protein) //"MA0007.1.jaspar.txt"
+//    for (in (, "RF00523.afa.txt.txt", "RF00005.afa.txt.txt")){
+//        for (std::size_t n = 5; n < 20+1; n=n+5) {
+//            read_matrix(filename,n,s)
+//            get_best_string(profile)
+//            for (auto T_perc in (0.01,0.05,0.1)){
+//                T = best_score * T_perc;
+//                evaluation_top_fraction(file_name+folder)
+//            }
+//        }
+//    }
+//}
+
 #endif //UNTITLED_EVALUATION_H
