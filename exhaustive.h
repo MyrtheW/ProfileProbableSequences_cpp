@@ -64,7 +64,7 @@ auto exhaustive(std::vector<std::vector<float>>  profile, std::size_t &n, std::s
     // the strings.
     std::string best_string(n, ' '); float best_score=0;
     get_best_string (profile,n,s, best_string, best_score, alphabet, 1);
-    T-= best_score;
+    T -= best_score;
 
     std::vector<std::string> strings;
     std::vector<float> scores={};

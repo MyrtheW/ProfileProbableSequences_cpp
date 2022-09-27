@@ -14,6 +14,24 @@
 #include "heuristic1.h"
 #include "heuristic2.h"
 
+float median(std::vector<float> v, std::size_t &s){
+    size_t n = s / 2;
+    nth_element(v.begin(), v.begin()+n, v.end());
+    while (v[n] == -std::numeric_limits<float>::infinity()){
+        n-=1;
+        nth_element(v.begin(), v.begin()+n, v.end());
+        }
+    return v[n];
+}
+
+float sum_medians(std::vector<std::vector<float>>&  profile, std::size_t &n, std::size_t &s)
+{   float sum = 0;
+    for (int i = 0; i < n; i++) {
+        sum += median(profile[i], s);
+    }
+    return sum;
+}
+
 void read_matrix (std::string filename, std::vector<std::vector<float>>&  profile,std::size_t &n, std::size_t &s, std::string&  alphabet){
     std::ifstream f(filename, std::ios::in);
     if ( f.is_open() ) { // always check whether the file is open
@@ -44,8 +62,7 @@ std::string outstring(std::vector<T> out_array){
 
 int evaluation_top_fraction(std::string folder= "C:\\Users\\myrth\\Documents\\SCHOOL\\1E SEMESTER MASTER\\S; stage\\Python code\\data\\DNA_profiles\\",
                             std::string file_name= "MA0007.1.jaspar.txt",
-                            std::size_t n =  20,
-                            float T = -18) {
+                            std::size_t n =  20, std::size_t s =  4, float T_perc=1.01) {
 // SET PARAMETERS
     std::vector<int> bs = {1, 5,10, 20, 50, 1000, 2000}; // b must be larger than ... if you want to find ... candidates
     std::vector<int> ks = {1};
@@ -57,12 +74,17 @@ int evaluation_top_fraction(std::string folder= "C:\\Users\\myrth\\Documents\\SC
 // READ FILE
 // Read in the profile matrix and the alphabet
     std::cout << folder +  file_name <<std::endl;
-    std::size_t s = 4;
     std::vector<std::vector<float>> profile(n, std::vector<float>(s));
     std::string alphabet;
     read_matrix(folder + file_name, profile, n,s, alphabet);
     alphabet_dict = create_alphabet_dict(alphabet);
     struct timespec start, end;
+    // Get threshold
+    std::vector<std::vector<float>> profile_copy = profile;
+    std::string best_string(n, ' '); float best_score=0;
+    get_best_string (profile_copy,n,s, best_string, best_score, alphabet, 1);
+    float median = sum_medians(profile,n,s);
+    float T = T_perc*(median - best_score) + best_score;
 
 // EXHAUSTIVE
 // Generate the exhaustive search results.
@@ -130,27 +152,30 @@ int evaluation_top_fraction(std::string folder= "C:\\Users\\myrth\\Documents\\SC
     return 0;
     }
 
-void distribution(std::string folder, std::string file_name) {
+void distribution(std::string folder, std::string file_name, float T_perc=1.01,std::size_t n = 20, std::size_t s = 4) {
     // SET PARAMETERS
     std::size_t k = 5;
     int b = 20;
-    std::size_t n =  20;
-    float normalized_prob_T = 0.53;
-    // Threshold , 0.53 for n=14 --> 267, 0.4 for n=8 --> 301 results, 0.3 for n=8, --> 3000 results
-    // for n =20 0.53--> 2162. exhaustive time 0.017 s, 36500 results.
-
 
     // READ FILE
     // Read in the profile matrix and the alphabet
-    std::size_t s = 4;
-    float T = -18; //std::log2(std::pow(normalized_prob_T, n));
     std::vector<std::vector<float>> profile(n, std::vector<float>(s));
     std::string alphabet;
     read_matrix(folder + file_name, profile, n,s, alphabet);
     alphabet_dict = create_alphabet_dict(alphabet);
+    // Get threshold
+    std::vector<std::vector<float>> profile_copy = profile;
+    std::string best_string(n, ' '); float best_score=0;
+    get_best_string (profile_copy,n,s, best_string, best_score, alphabet, 1);
+    float median = sum_medians(profile,n,s);
+    float T = T_perc*(median - best_score) + best_score;//T_perc*best_score;
+    struct timespec start, end;
 
     // HEURISTIC 3
+    clock_gettime(CLOCK_MONOTONIC, &start);
     auto result_exhaustive = exhaustive(profile,n,s, alphabet, T);
+    clock_gettime(CLOCK_MONOTONIC, &end);
+    double time_exhaustive = ((end.tv_sec - start.tv_sec) * 1e9 + (end.tv_nsec - start.tv_nsec)) * 1e-9;
     // HEURISTIC 3
     auto result_heuristic1 = heuristic1 (profile,n,s, alphabet, T, k);
     // HEURISTIC 3
@@ -169,19 +194,22 @@ void distribution(std::string folder, std::string file_name) {
     o << "T = " << T <<std::endl;
     o << "b = " << b <<std::endl;
     o << "k = " << k <<std::endl;
+    o << "size_exhaustive = " << std::get<1>(result_exhaustive).size() <<std::endl;
+    o << "time_exhaustive = " << time_exhaustive <<std::endl;
     o << "results_exhaustive = [" << outstring(std::get<1>(result_exhaustive)) << "]" <<std::endl;
     o << "results_h1 = [" << outstring(std::get<1>(result_heuristic1)) << "]" <<std::endl;
     o << "results_h2 = [" << outstring(std::get<1>(result_heuristic2)) << "]" <<std::endl;
     o << "results_h3 = [" << outstring(result_heuristic3_values) << "]" <<std::endl;
     o.close();
 }
-void evaluation_vsn(std::string folder, std::string file_name) {
-    std::size_t max_n = 20;
-    float k_factor = 0.25;
-    float normalized_threshold = 0.4;
-    std::map<int,float> normalized_thresholds = {{5,0.29}, {8,0.35}, {10,0.42}, {15,0.53}, {20,0.54}};
+void evaluation_vsn(std::string folder, std::string file_name, std::size_t max_n = 20, float T_perc=1.01, std::size_t s = 4) {
+
+
+//    float normalized_threshold = 0.4;
+//    std::map<int,float> normalized_thresholds = {{5,0.29},  {10,0.42}, {15,0.53}, {20,0.54}};
 // Threshold , 0.53 for n=14 --> 267, 0.4 for n=8 --> 301 results, 0.3 for n=8, --> 3000 results
     // for n =20 0.53--> 2162. exhaustive time 0.017 s, 36500 results.
+    float k_factor = 0.25;
     struct timespec start, end;
     std::vector<float> times_exhaustive = {};
     std::vector<float> sizes_exhaustive = {};
@@ -192,22 +220,27 @@ void evaluation_vsn(std::string folder, std::string file_name) {
     std::vector<float> ns = {};
     std::vector<float> ks = {};
     std::vector<float> bs = {};
-
+    std::vector<float> thresholds = {};
     for (std::size_t n = 5; n < max_n+1; n=n+5){
         ns.push_back(n);
         int k = k_factor*n;
         ks.push_back(k);
-        normalized_threshold = normalized_thresholds[n];
-        float T = std::log2(std::pow(normalized_threshold, n));
         int b = 20;
         bs.push_back(b);
 
         // READ FILE
-        std::size_t s = 4;
+
         std::vector<std::vector<float>> profile(n, std::vector<float>(s));
         std::string alphabet;
         read_matrix(folder + file_name, profile, n,s, alphabet);
         alphabet_dict = create_alphabet_dict (alphabet);
+        // get threshold
+        std::vector<std::vector<float>> profile_copy = profile;
+        std::string best_string(n, ' '); float best_score=0;
+        get_best_string (profile_copy,n,s, best_string, best_score, alphabet, 1);
+        float median = sum_medians(profile,n,s);
+        float T = T_perc*(median - best_score) + best_score;//T_perc*best_score;
+        thresholds.push_back(T);
 
         // EXHAUSTIVE
         clock_gettime(CLOCK_MONOTONIC, &start);
@@ -241,17 +274,13 @@ void evaluation_vsn(std::string folder, std::string file_name) {
         time_result = ((end.tv_sec - start.tv_sec) * 1e9 + (end.tv_nsec - start.tv_nsec)) * 1e-9;
         if (time_result != 0) speedups_h3.push_back(time_exhaustive/time_result);
         found_fractions_h3.push_back((result3).size()/size_exhaustive);
-        }
+     }
     // SAVE RESULTS
     // Saving results to a python library, that can be read in to make figures.
     std::ofstream o(folder+"results\\"+file_name.substr(0,6) + "_vsn.py"); // "here.py");//
     o << "file_name = \"" << file_name.substr(0,7) << "\"" <<std::endl;
     o << "ns = [" << outstring(ns) << "]" <<std::endl;
-    std::vector<float> normalized_T_values;
-    for (auto item = normalized_thresholds.begin(); item != normalized_thresholds.end(); item++){
-        normalized_T_values.push_back(std::get<1>(*item));
-    }
-    o << "normalized_thresholds = [" << outstring(normalized_T_values) << "]"<<std::endl;
+    o << "thresholds = [" << outstring(thresholds) << "]"<<std::endl;
     o << "sizes_exhaustive = [" << outstring(sizes_exhaustive) << "]" <<std::endl;
     o << "times_exhaustive = [" << outstring(times_exhaustive) << "]" <<std::endl;
     o << "ks = [" << outstring(ks) << "]" <<std::endl;
@@ -265,11 +294,11 @@ void evaluation_vsn(std::string folder, std::string file_name) {
     o.close();
 
 }
-float OFV(float x, float y){
-    // y --> delta t / t exact.
-    // x--> found fraction.
-    return(x/100 +y/2);
-}
+//float OFV(float x, float y){
+//    // y --> delta t / t exact.
+//    // x--> found fraction.
+//    return(x/100 +y/2);
+//}
 
 //void multiple_matrices(){
 //    for (folder in DNA, RNA, protein) //"MA0007.1.jaspar.txt"
@@ -277,7 +306,7 @@ float OFV(float x, float y){
 //        for (std::size_t n = 5; n < 20+1; n=n+5) {
 //            read_matrix(filename,n,s)
 //            get_best_string(profile)
-//            for (auto T_perc in (0.01,0.05,0.1)){
+//            for (auto T_perc in (1.01,1.05,1.1)){
 //                T = best_score * T_perc;
 //                evaluation_top_fraction(file_name+folder)
 //            }
